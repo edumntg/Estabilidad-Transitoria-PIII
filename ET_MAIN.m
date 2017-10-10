@@ -1,11 +1,22 @@
 %% Programa generico para estabilidad transitoria
 clc, clear all
 
+%% Los datos del archivo Excel se especifican de la siguiente manera
+    % Hoja 1: Datos de barras
+    % Hoja 2: Datos de ramas prefalla
+    % Hoja 3: Datos de ramas falla
+    % Hoja 4: Datos de ramas postfalla
+    % Hoja 5: Generadores
+
 DATAFILE = 'BUSDATA.xlsx';
 % DATAFILE = 'Datos9barras.xlsx';
 
 f = 60;
 w0 = 2*pi*f;
+
+ShowUnits = 0;
+Vb = 115;
+Sb = 100;
 
 %% Tiempos de perturbacion y despeje
 dt = 0.5/f;
@@ -16,8 +27,22 @@ tf = 250/f;
 
 %%
 
-FDC_LoadData;
-FDC_Main_Excel;
+[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA] = ET_LoadData(DATAFILE);
+
+n = size(BUSDATA, 1);                   % el numero de filas en el archivo excel es igual al numero de barras
+nl_pre = size(LINEDATA_PRE, 1);         % el numero de filas en el archivo excel es igual al numero de ramas
+nl_falla = size(LINEDATA_FALLA, 1);     % el numero de filas en el archivo excel es igual al numero de ramas
+nl_post = size(LINEDATA_POST, 1);       % el numero de filas en el archivo excel es igual al numero de ramas
+ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel es igual al numero de generadores
+
+[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(LINEDATA_PRE, n);
+[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(LINEDATA_FALLA, n);
+[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(LINEDATA_POST, n);
+
+[V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
+Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, Gp, Bp, gp, bp);
+
+ET_PrintFDC;
 
 Pm = Pgen; 
 
@@ -35,7 +60,7 @@ for g = 1:n_gen
         if(abs(Sgen) > 0)
             Zgen = GENDATA(g, 2) + 1i*GENDATA(g, 3);
             barra = GENDATA(g, 1);
-            Vbarra = V(barra)*(cos(d(barra)) + 1i*sin(d(barra)));
+            Vbarra = V(barra)*(cos(theta(barra)) + 1i*sin(theta(barra)));
             Ibarra(g) = conj(Sgen/Vbarra);
             Ef = Vbarra + Ibarra(g)*Zgen;
             GENDATA(g, 4) = abs(Ef);
@@ -48,8 +73,11 @@ for g = 1:n_gen
     end
 end
 
-ET_YbusExtendida;                           % Se arma la matriz extendida del sistema
-[YKronPre, YaPre, YbPre, YcPre, YdPre] = ET_Kron(YbusExtPre, n_gen);         % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusp);                     % Se arma la matriz extendida del sistema
+[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusf);                     % Se arma la matriz extendida del sistema
+[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybuspt);                  % Se arma la matriz extendida del sistema
+
+[YKronPre, YaPre, YbPre, YcPre, YdPre] = ET_Kron(YbusExtp, n_gen);         % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 x0 = zeros(1, size(YKronPre, 1));
 x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronPre), x0);

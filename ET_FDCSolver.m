@@ -1,14 +1,11 @@
-function F = FDC_SolverFunc(x, SHUNTDATA, bustype, V, d, Ki, Pload, Qload, Pconsig, Qconsig, Ybus, g, b, Pdesbalance)
+function F = ET_FDCSolver(x, LINEDATA, bustype, V, th, Ki, Pload, Qload, Pconsig, Qconsig, G, B, g, b, Pdesbalance)
     PQ = 0;
     SLACK = 1;
     PV = 2;
     REF = 3;
     
     n = size(V, 1);
-    ns = size(SHUNTDATA, 1);
-    
-    G = real(Ybus);
-    B = imag(Ybus);
+    nl = size(LINEDATA, 1);
     
     Pflow = zeros(n,n);
     Qflow = zeros(n,n);
@@ -27,28 +24,28 @@ function F = FDC_SolverFunc(x, SHUNTDATA, bustype, V, d, Ki, Pload, Qload, Pcons
     %% Primero vamos a calcular los flujos de potencia para cada barra (Lo que sale/entra por las lineas)
     for i = 1:n
         Vi = V(i);
-        di = d(i);
+        thi = th(i);
         
         if bustype(i) == PV                 
-            di = x(2*i-1);                  % En barra PV el angulo varia
+            thi = x(2*i-1);                  % En barra PV el angulo varia
         elseif bustype(i) == PQ
-            di = x(2*i-1);                  % En barra PQ el angulo varia
+            thi = x(2*i-1);                  % En barra PQ el angulo varia
             Vi = x(2*i);                    % En barra PQ el voltaje varia
         end
         
         for k = 1:n
             Vk = V(k);
-            dk = d(k);
+            thk = th(k);
             if bustype(k) == PV             
-                dk = x(2*k-1);              % En barra PV el angulo varia
+                thk = x(2*k-1);              % En barra PV el angulo varia
             elseif bustype(k) == PQ
-                dk = x(2*k-1);              % En barra PQ el angulo varia
+                thk = x(2*k-1);              % En barra PQ el angulo varia
                 Vk = x(2*k);                % En barra PQ el voltaje varia
             end
             
             if i ~= k
-                Pflow(i,k) = (-G(i,k) + g(i,k))*Vi^2 + Vi*Vk*(G(i,k)*cos(di-dk) + B(i,k)*sin(di-dk));
-                Qflow(i,k) = (B(i,k) - b(i,k))*Vi^2 + Vi*Vk*(-B(i,k)*cos(di-dk) + G(i,k)*sin(di-dk));
+                Pflow(i,k) = (-G(i,k) + g(i,k))*Vi^2 + Vi*Vk*(G(i,k)*cos(thi-thk) + B(i,k)*sin(thi-thk));
+                Qflow(i,k) = (B(i,k) - b(i,k))*Vi^2 + Vi*Vk*(-B(i,k)*cos(thi-thk) + G(i,k)*sin(thi-thk));
             end
         end
         Pflow_bus(i) = sum(Pflow(i,1:size(Pflow, 2)));
@@ -77,10 +74,12 @@ function F = FDC_SolverFunc(x, SHUNTDATA, bustype, V, d, Ki, Pload, Qload, Pcons
     Ploss_tot = sum(Ploss_bus);             % Perdidas totales en el sistema
     
     %% Ahora vamos a calcular la potencia demandada/inyectada por los shunts
-    if isempty(SHUNTDATA) == 0
-        for i = 1:ns
-            b = SHUNTDATA(i, 1);                % barra
-            z = 1i*SHUNTDATA(i, 2);             % impedancia
+    for i = 1:nl
+        from = LINEDATA(i, 1);
+        to = LINEDATA(i, 2);
+        if(from == to)          % es shunt
+            b = from;
+            z = 1i*LINEDATA(i, 4);             % impedancia
 
             Vbus = V(b);
             if bustype(b) == PQ
@@ -130,6 +129,7 @@ function F = FDC_SolverFunc(x, SHUNTDATA, bustype, V, d, Ki, Pload, Qload, Pcons
         %% El orden de las ecuaciones sera
             % P
             % Q
+
         if bustype(i) == SLACK || bustype(i) == REF
             F(2*i-1) = Pgi - Pconsig(i) - abs(Pload(i)) - Ki(i)*Ploss_tot + Ki(i)*Pdesbalance;
         else
