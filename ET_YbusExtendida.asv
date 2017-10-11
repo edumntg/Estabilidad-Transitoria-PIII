@@ -44,9 +44,7 @@ function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybus, falla)
             if(GENDATA(i, 10) ~= 0)
                 bus = GENDATA(i, 1);
                 Zfalla = GENDATA(i, 11);
-                if(Zfalla ~= 0)
-                	YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) + 1/Zfalla;
-                end
+                YbusExt()
             end
         end
     end

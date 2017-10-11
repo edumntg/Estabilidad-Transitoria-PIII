@@ -22,17 +22,17 @@ function [Ybus, G, B, g, b] = ET_Ybus(LINEDATA, n)
         Bl = 1i*LINEDATA(i, 5);                     % Shunt x2 de la linea
 
         Ybus(from, from) = Ybus(from, from) + (1/Zl)/(a^2);
-        Ybus(to, to) = Ybus(to, to) + (1/Zl)/(a^2);
         if(from ~= to)
+            Ybus(to, to) = Ybus(to, to) + (1/Zl)/(a^2);
             Ybus(from, to) = Ybus(from, to) - (1/Zl)/a;
             Ybus(to, from) = Ybus(to, from) - (1/Zl)/a;
         end
 
         % Se agregan los shunts de las lineas
         Ybus(from, from) = Ybus(from, from) + Bl/2;
-        Ybus(to, to) = Ybus(to, to) + Bl/2;
 
         if(from ~= to)
+            Ybus(to, to) = Ybus(to, to) + Bl/2;
             g(from, to) = real(Bl/2);
             g(to, from) = real(Bl/2);
 

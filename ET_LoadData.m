@@ -6,10 +6,11 @@
     % Hoja 3: Datos de ramas falla
     % Hoja 4: Datos de ramas postfalla
     % Hoja 5: Generadores
-function [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA] = FDC_LoadData(DATAFILE)
+function [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA] = ET_LoadData(DATAFILE)
     BUSDATA = xlsread(DATAFILE, 1);
     LINEDATA_PRE = xlsread(DATAFILE, 2);
     LINEDATA_FALLA = xlsread(DATAFILE, 3);
     LINEDATA_POST = xlsread(DATAFILE, 4);
     GENDATA = xlsread(DATAFILE, 5);
+    SIMULATIONDATA = xlsread(DATAFILE, 6);
 end
