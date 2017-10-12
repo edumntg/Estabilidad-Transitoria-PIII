@@ -8,7 +8,7 @@
     % primeras barras enumeradas
     
     % La matriz extendida RM va a ser de tamaño 2*n
-function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybus, falla)
+function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
 
     n = size(Ybus, 1);                   % tamaño original del sistema
     n_gen = size(GENDATA, 1);
@@ -35,24 +35,46 @@ function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybus, falla)
             YbusExt(i + n_gen, i + n_gen) = YbusExt(i + n_gen, i + n_gen) + 1/Zcarga(i);
         end
     end
-    
+
+    YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) = YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) + Ybus(1:n, 1:n);
+
     % Si nos encontramos en situacion de falla, debemos agregar la
     % impedancia de falla a la barra y eliminar las impedancias de carga y
     % shunts
     if(falla)
         for i = 1:n
-            if(GENDATA(i, 10) ~= 0)
-                bus = GENDATA(i, 1);
-                Zfalla = GENDATA(i, 11);
+            if(BUSDATA(i, 10) ~= 0) % barra con falla especificada
+                
+                % Asumimos en primera instancia que es una falla trifasica,
+                % de esta forma se cortocircuitan las cargas y los shunts
+                bus = BUSDATA(i, 1);
+                Zfalla = BUSDATA(i, 11);
+                
+                % Se agrega Zfalla
                 if(Zfalla ~= 0)
                 	YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) + 1/Zfalla;
+                end
+                
+                %Se elimina Zcarga
+                
+                Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+                if(Scarga ~= 0)
+                    Zcarga = V(bus)^2 /conj(Scarga);
+                    YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) - 1/Zcarga;
+                end
+                
+                % Se elimina el shunt conectado
+                for j = 1:size(LINEDATA, 1)
+                    if(LINEDATA(j, 1) == LINEDATA(j, 2) && LINEDATA(j, 1) == bus)
+                        % Es shunt y ademas esta conectado a la barra de
+                        % estudio
+                        Zshunt = 1i*LINEDATA(j, 4);
+                        YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) - 1/Zshunt;
+                    end
                 end
             end
         end
     end
-
-    YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) = YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) + Ybus(1:n, 1:n);
-
 
     YbusRM = zeros(2*n, 2*n);
     

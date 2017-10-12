@@ -1,5 +1,5 @@
 %% Programa generico para estabilidad transitoria
-clc, clear all
+clear all
 
 %% Los datos del archivo Excel se especifican de la siguiente manera
     % Hoja 1: Datos de barras
@@ -8,8 +8,8 @@ clc, clear all
     % Hoja 4: Datos de ramas postfalla
     % Hoja 5: Generadores
 
-DATAFILE = 'BUSDATA.xlsx';
-% DATAFILE = 'Datos9barras.xlsx';
+% DATAFILE = 'BUSDATA.xlsx';
+DATAFILE = 'Datos9barras_confalla.xlsx';
 
 f = 60;
 w0 = 2*pi*f;
@@ -73,49 +73,47 @@ for g = 1:n_gen
     end
 end
 
-[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
-[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
-[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
+[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_PRE, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
+[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_FALLA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
+[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
 
 [YKronp, Yap, Ybp, Ycp, Ydp] = ET_Kron(YbusExtp, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 [YKronf, Yaf, Ybf, Ycf, Ydf] = ET_Kron(YbusExtf, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 [YKronpt, Yapt, Ybpt, Ycpt, Ydpt] = ET_Kron(YbusExtpt, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 x0 = zeros(1, size(YKronp, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
+[x,fvalp,exitflagp,outputp,jacobianp] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
 YShuntKronp = ET_KronShunt(x);
 
 x0 = zeros(1, size(YKronf, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronf), x0);
+[x,fvalf,exitflagf,outputf,jacobianf] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronf), x0);
 YShuntKronf = ET_KronShunt(x);
 
 x0 = zeros(1, size(YKronpt, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
+[x,fvalpt,exitflagpt,outputpt,jacobianpt] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
 YShuntKronpt = ET_KronShunt(x);
 
 Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
 
+%% Caso pre falla
+w0 = zeros(1, ng);
+[wp, dp, Pep] = ET_Integracion(H, Em, d0, w0, Pe0p, Pm, YKronp, YShuntKronp, f, [ti dt tp]);
 
-
-
-
-%% Una vez obtenidas las expresiones pre-falla, pasamos a simular la falla.
-tipo_perturbacion = input('Ingrese el tipo de perturbacion (0 = Potencia Mecanica, 1 = Falla): ');
-if(tipo_perturbacion == 0)
-    ET_SimulacionPerturbacionPotencia;
-else
-    tipo_falla = input('Ingrese el tipo de falla (1 = longitudinal, 2 = barra): ');
-    if(tipo_falla == 1)
-        ET_SimulacionFallaLongitudinal;
-    elseif(tipo_falla == 2)
-        ET_SimulacionFallaBarra;
-    end
+%% Caso falla
+for gi = 1:ng
+    w0(gi) = wp(gi, length(wp));
+    d0(gi) = dp(gi, length(dp));
+    Pe0(gi) = Pep(gi, length(Pep));
 end
-% Por ahora, se asume que la falla se despeja y la linea queda en servicio,
-% por lo que las ecuaciones de potencia post-falla seran iguales a la
-% pre-falla
+[wf, df, Pef] = ET_Integracion(H, Em, d0, w0, Pe0, Pm, YKronf, YShuntKronf, f, [tp dt td]);
+pause;
+%% Caso post-falla
+for gi = 1:ng
+    w0(gi) = wf(gi, length(wf));
+    d0(gi) = df(gi, length(df));
+    Pe0(gi) = Pef(gi, length(Pef));
+end
+[wpt, dpt, Pept] = ET_Integracion(H, Em, d0, w0, Pe0, Pm, YKronpt, YShuntKronpt, f, [td dt tf]);
 
-% PeEqPost = PeEqPre;
-ET_Oscilacion;
-
-ET_Plot;
+ET_Plot(wp, dp, Pep, wf, df, Pef, wpt, dpt, Pept, [ti tp td tf dt]);
+% plot(ti:dt:tp, Pep(1, :), tp:dt:td, Pef(1, :), td:dt:tf, Pept(1, :)), line([tp tp], [Pef(1, 1) Pep(1, length(Pep))]), grid minor

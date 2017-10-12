@@ -18,7 +18,7 @@ function [Ybus, G, B, g, b] = ET_Ybus(LINEDATA, n)
         from = LINEDATA(i, 1);                      % Barra de inicio de la linea
         to = LINEDATA(i, 2);                        % Barra de fin de la linea
         Zl = LINEDATA(i, 3) + 1i*LINEDATA(i, 4);    % Impedancia de la linea
-        a = LINEDATA(i, 6);                         % Tap del transformador
+        a = LINEDATA(i, 7);                         % Tap del transformador
         Bl = 1i*LINEDATA(i, 5);                     % Shunt x2 de la linea
 
         Ybus(from, from) = Ybus(from, from) + (1/Zl)/(a^2);

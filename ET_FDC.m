@@ -86,6 +86,7 @@ function [V, th, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, Qflow, Qflo
 
     %% Ejecucion del fsolve (iteraciones)
     options = optimset('Display','off');
+    
     X = fsolve(@(x)ET_FDCSolver(x, LINEDATA, bustype, V, th, Ki, Pload, Qload, Pconsig, Qconsig, G, B, g, b, Pdesbalance), X0, options);
 
     %% Una vez terminadas las iteraciones, se obtienen las variables de salida y se recalculan potencias

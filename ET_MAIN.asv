@@ -1,5 +1,5 @@
 %% Programa generico para estabilidad transitoria
-clc, clear all
+clear all
 
 %% Los datos del archivo Excel se especifican de la siguiente manera
     % Hoja 1: Datos de barras
@@ -18,16 +18,16 @@ ShowUnits = 0;
 Vb = 115;
 Sb = 100;
 
-%% Tiempos de perturbacion y despeje
-dt = 0.5/f;
+[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA] = ET_LoadData(DATAFILE);
+
+%% No tocar
 ti = 0;
-tp = 4/f;
-td = 18/f;
-tf = 250/f;
-
+f = SIMULATIONDATA(1);
+tp = SIMULATIONDATA(2)/f;
+td = SIMULATIONDATA(3)/f;
+tf = SIMULATIONDATA(4)/f;
+dt = SIMULATIONDATA(5)/f;
 %%
-
-[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA] = ET_LoadData(DATAFILE);
 
 n = size(BUSDATA, 1);                   % el numero de filas en el archivo excel es igual al numero de barras
 nl_pre = size(LINEDATA_PRE, 1);         % el numero de filas en el archivo excel es igual al numero de ramas
@@ -73,31 +73,30 @@ for g = 1:n_gen
     end
 end
 
-[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusp);                     % Se arma la matriz extendida del sistema
-[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybusf);                     % Se arma la matriz extendida del sistema
-[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, V, Ybuspt);                  % Se arma la matriz extendida del sistema
+[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_PRE, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
+[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_FALLA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
+[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
 
 [YKronp, Yap, Ybp, Ycp, Ydp] = ET_Kron(YbusExtp, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 [YKronf, Yaf, Ybf, Ycf, Ydf] = ET_Kron(YbusExtf, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 [YKronpt, Yapt, Ybpt, Ycpt, Ydpt] = ET_Kron(YbusExtpt, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 x0 = zeros(1, size(YKronp, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
+[x,fvalp,exitflagp,outputp,jacobianp] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
 YShuntKronp = ET_KronShunt(x);
 
 x0 = zeros(1, size(YKronf, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronf), x0);
+[x,fvalf,exitflagf,outputf,jacobianf] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronf), x0);
 YShuntKronf = ET_KronShunt(x);
 
 x0 = zeros(1, size(YKronpt, 1));
-x = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
-YShuntKronp = ET_KronShunt(x);
+[x,fvalpt,exitflagpt,outputpt,jacobianpt] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
+YShuntKronpt = ET_KronShunt(x);
 
 Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
 
-
-
-
+%% Se simula la falla ahora
+[x,fvalp,exitflagp,outputp,jacobianp] =
 
 %% Una vez obtenidas las expresiones pre-falla, pasamos a simular la falla.
 tipo_perturbacion = input('Ingrese el tipo de perturbacion (0 = Potencia Mecanica, 1 = Falla): ');

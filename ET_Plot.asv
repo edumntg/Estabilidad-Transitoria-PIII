@@ -12,32 +12,19 @@ function ET_Plot(wp, dp, Pep, wf, df, Pef, wpt, dpt, Pept, tvec)
         plegend{i} = strcat('Generador ', num2str(i));
     end
 
-    figure(1), hold on
-    for i = 1:ng
-        plot(ti:dt:tp, Pep, tp:dt:td, Pef, td:dt:tf, Pept), grid minor
-        line([tp tp], [Pef(i, 1) Pep(i, length(Pep))]);
-        line([td td], [Pept(i, 1) Pef(i, length(Pef))]);
-    end
-    title('Potencia electrica');
-    legend(plegend);
-    hold off;
-
-    figure(2)
+    figure(1)
     for i = 1:ng
         plot(ti:dt:tp, wp, tp:dt:td, wf, td:dt:tf, wpt), grid minor
+        line([tp tp], [wf(i, 1) wp(i, length(wp))]);
+        line([td td], [wpt(i, 1) wf(i, length(wf))]);
     end
+    
+    
+    line([tp tp], ylim, 'Color',[1 0 0])
+    line([td td], ylim, 'Color', [0 1 0])
+    grid minor;
     title('Desviacion de velocidad');
     legend(plegend);
-    
-    figure(3)
-    for i = 1:ng
-        plot(ti:dt:tp, dp, tp:dt:td, df, td:dt:tf, dpt), grid minor
-    end
-    title('Angulo delta');
-    legend(plegend);
-%     line([tp tp], ylim, 'Color',[1 0 0]);
-%     line([td td], ylim, 'Color', [0 1 0]);
-
 
 %     figure(2)
 %     for i = 1:ng
