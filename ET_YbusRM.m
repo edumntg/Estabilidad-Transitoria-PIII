@@ -8,7 +8,7 @@
     % primeras barras enumeradas
     
     % La matriz extendida RM va a ser de tamaño 2*n
-function YbusExt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
+function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
 
     n = size(Ybus, 1);                   % tamaño original del sistema
     n_gen = size(GENDATA, 1);
@@ -75,4 +75,46 @@ function YbusExt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
             end
         end
     end
+
+    YbusRM = zeros(2*n, 2*n);
+    nPQ = 0;
+    for i = 1:n
+        if(BUSDATA(i, 2) == 0) %es PQ
+            nPQ = nPQ + 1;
+        end
+    end
+    
+    nPVS = n - nPQ; % numeros de SLACK + PV
+
+    % La matriz YbusRMPre estara conformada por [Ya Yb; -Yb Ya] donde Ya
+    % lleva los elementos G propios y Yb los elementos B propios
+    
+    % La matriz Ya sera una matriz de tamaño = nk (tamaño del equivalente Kron))
+    Ya = Ybus(1:nPVS, 1:nPVS);
+    % La matriz Yb sera una matriz que va desde ng+1 hasta n
+    Yb = Ybus(1:nPVS, nPVS+1:n);
+    % La matriz Yc siempre es igual a la traspuesta de Yb
+    Yc = transpose(Yb);
+    % La matriz Yd es igual a una matriz que va desde ng+1 hasta n
+    Yd = Ybus(nPVS+1:n, nPVS+1:n);
+    
+    YKronbus = Ya - Yb*inv(Yd)*Yc
+    
+    Gk = real(YKronbus);
+    Bk = imag(YKronbus);
+
+    
+    nk = size(YKronbus, 1);
+    YaRM = zeros(nk, nk);
+    YbRM = zeros(nk, nk);
+    %% Ahora esta matriz la convertimos a RM
+    for i = 1:nk
+        for j = 1:nk
+            YaRM(i, j) = Gk(i, j);
+            YbRM(i, j) = -Bk(i, j);
+        end
+    end
+
+    YbusRM = [YaRM YbRM; -YbRM YaRM];
+
 end

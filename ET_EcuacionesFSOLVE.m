@@ -1,4 +1,4 @@
-function F = ET_EcuacionesFSOLVE(x, k, ng, dt, YKron, YShuntKron, Pmn, w, d, Pmv, Pev, E, H, w0)
+function F = ET_EcuacionesFSOLVE(x, ng, dt, YKron, YShuntKron, Pmn, wv, dv, Pmv, Pev, E, H, w0)
 
     % Tendremos dos ecuaciones por generador, en total 2*n_gen ecuaciones
     % Tambien tendremos 2 variables, las cuales seran wn y dn (n de nuevo)
@@ -29,9 +29,9 @@ function F = ET_EcuacionesFSOLVE(x, k, ng, dt, YKron, YShuntKron, Pmn, w, d, Pmv
         
         Pen(i) = sum(Peij(i, 1:ng));
         
-        wvi = w(i, length(w));
-        dvi = d(i, length(d));
-        Pevi = Pev(i, length(Pev));
+        wvi = wv(i);
+        dvi = dv(i);
+        Pevi = Pev(i);
         Pmvi = Pmv(i);
         
         wni = wn(i);

@@ -4,7 +4,7 @@
 
 % global n nl ns Ybus
 
-function [Ybus, G, B, g, b] = ET_Ybus(LINEDATA, n)
+function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla)
 
     Ybus = zeros(n,n);          % Se inicializa como una matriz de ceros
 
@@ -40,6 +40,36 @@ function [Ybus, G, B, g, b] = ET_Ybus(LINEDATA, n)
             b(to, from) = imag(Bl/2);
         end
     end
+    
+    % Si nos encontramos en situacion de falla, debemos agregar la
+    % impedancia de falla a la barra y eliminar las impedancias de shunts
+    if(falla)
+        for i = 1:n
+            if(BUSDATA(i, 10) ~= 0) % barra con falla especificada
+                
+                % Asumimos en primera instancia que es una falla trifasica,
+                % de esta forma se cortocircuitan las cargas y los shunts
+                bus = BUSDATA(i, 1);
+                Zfalla = BUSDATA(i, 11);
+                
+                % Se agrega Zfalla
+                if(Zfalla ~= 0)
+                	Ybus(bus, bus) = Ybus(bus, bus) + 1/Zfalla;
+                end
+                
+                % Se elimina el shunt conectado
+                for j = 1:size(LINEDATA, 1)
+                    if(LINEDATA(j, 1) == LINEDATA(j, 2) && LINEDATA(j, 1) == bus)
+                        % Es shunt y ademas esta conectado a la barra de
+                        % estudio
+                        Zshunt = 1i*LINEDATA(j, 4);
+                        Ybus(bus, bus) = Ybus(bus, bus) - 1/Zshunt;
+                    end
+                end
+            end
+        end
+    end
+    
 
     G = real(Ybus);
     B = imag(Ybus);

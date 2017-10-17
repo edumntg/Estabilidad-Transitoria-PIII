@@ -35,9 +35,9 @@ nl_falla = size(LINEDATA_FALLA, 1);     % el numero de filas en el archivo excel
 nl_post = size(LINEDATA_POST, 1);       % el numero de filas en el archivo excel es igual al numero de ramas
 ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel es igual al numero de generadores
 
-[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(LINEDATA_PRE, n);
-[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(LINEDATA_FALLA, n);
-[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(LINEDATA_POST, n);
+[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0);
+[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1);
+[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0);
 
 [V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
 Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, Gp, Bp, gp, bp);
@@ -73,14 +73,26 @@ for g = 1:n_gen
     end
 end
 
-[YbusExtp, YbusRMp] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_PRE, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
-[YbusExtf, YbusRMf] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_FALLA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
-[YbusExtpt, YbusRMpt] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
+YbusExtp = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_PRE, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
+YbusExtf = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_FALLA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
+YbusExtpt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
 
-[YKronp, Yap, Ybp, Ycp, Ydp] = ET_Kron(YbusExtp, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronf, Yaf, Ybf, Ycf, Ydf] = ET_Kron(YbusExtf, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronpt, Yapt, Ybpt, Ycpt, Ydpt] = ET_Kron(YbusExtpt, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+%% Estas son los equivalentes de Kron de la matriz extendia (que incluye las impedancias de los gen)
+[YKronp, Yap, Ybp, Ycp, Ydp] = ET_KronExtendida(YbusExtp, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronf, Yaf, Ybf, Ycf, Ydf] = ET_KronExtendida(YbusExtf, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronpt, Yapt, Ybpt, Ycpt, Ydpt] = ET_KronExtendida(YbusExtpt, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
+%% Estos son los equivalentes de Kron sin impedancias de generadores. En este equivalente se eliminan barras PQ
+[YKronRp, YaRp, YbRp, YcRp, YdRp] = ET_Kron(Ybusp, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronRf, YaRf, YbRf, YcRf, YdRf] = ET_Kron(Ybusf, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronRpt, YaRpt, YbRpt, YcRpt, YdRpt] = ET_Kron(Ybuspt, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+
+%% Matrices RM
+[YRMp, YaRMp, YbRMp, YcRMp, YdRMp] = ET_YRM(YKronRp);
+[YRMf, YaRMf, YbRMf, YcRMf, YdRMf] = ET_YRM(YKronRf);
+[YRMpt, YaRMpt, YbRMpt, YcRMpt, YdRMpt] = ET_YRM(YKronRpt);
+
+%% SHUNTS de los equivalentes de Kron Extendidos
 x0 = zeros(1, size(YKronp, 1));
 [x,fvalp,exitflagp,outputp,jacobianp] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
 YShuntKronp = ET_KronShunt(x);
@@ -92,6 +104,11 @@ YShuntKronf = ET_KronShunt(x);
 x0 = zeros(1, size(YKronpt, 1));
 [x,fvalpt,exitflagpt,outputpt,jacobianpt] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
 YShuntKronpt = ET_KronShunt(x);
+
+%% Calculos de los VRM e IRM
+[VRMp, IRMp] = ET_VRMIRM(V, theta, YRMp);
+[VRMf, IRMf] = ET_VRMIRM(V, theta, YRMf);
+[VRMp, IRMpt] = ET_VRMIRM(V, theta, YRMpt);
 
 Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
 
@@ -106,7 +123,7 @@ for gi = 1:ng
     Pe0(gi) = Pep(gi, length(Pep));
 end
 [wf, df, Pef] = ET_Integracion(H, Em, d0, w0, Pe0, Pm, YKronf, YShuntKronf, f, [tp dt td]);
-pause;
+
 %% Caso post-falla
 for gi = 1:ng
     w0(gi) = wf(gi, length(wf));
