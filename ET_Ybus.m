@@ -4,7 +4,7 @@
 
 % global n nl ns Ybus
 
-function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla)
+function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla, V, theta)
 
     Ybus = zeros(n,n);          % Se inicializa como una matriz de ceros
 
@@ -41,6 +41,21 @@ function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla)
         end
     end
     
+    %% Si V y theta no estan vacios, significa que ya se realizo el FDC
+     % Por tanto ya se pueden agregar las impedancias de carga a las barras
+     % especificas
+    if(isempty(V) == 0) % Vector voltajes no esta vacio
+        for i = 1:size(BUSDATA, 1)
+            bus = BUSDATA(i, 1);
+            Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+            if(abs(Scarga ~= 0))
+                Zcarga = V(i)^2 /conj(Scarga);
+
+                Ybus(bus, bus) = Ybus(bus, bus) + 1/Zcarga;
+            end
+        end
+    end
+    
     % Si nos encontramos en situacion de falla, debemos agregar la
     % impedancia de falla a la barra y eliminar las impedancias de shunts
     if(falla)
@@ -66,6 +81,22 @@ function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla)
                         Ybus(bus, bus) = Ybus(bus, bus) - 1/Zshunt;
                     end
                 end
+                
+                %% Si V y theta no estan vacios, significa que ya se realizo el FDC
+                % Por tanto ya se pueden remover las impedancias de carga a las barras
+                % especificas con falla
+                if(isempty(V) == 0) % Vector voltajes no esta vacio
+                    for i = 1:size(BUSDATA, 1)
+                        bus = BUSDATA(i, 1);
+                        Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+                        if(abs(Scarga ~= 0))
+                            Zcarga = V(i)^2 /conj(Scarga);
+
+                            Ybus(bus, bus) = Ybus(bus, bus) - 1/Zcarga;
+                        end
+                    end
+                end
+                
             end
         end
     end

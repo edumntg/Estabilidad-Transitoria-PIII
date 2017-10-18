@@ -2,7 +2,7 @@
 
 % Programa para realizar la reduccion de Kron
 
-function [YRM, YaRM, YbRM, YcRM, YdRM] = ET_YRM(Ykron)
+function YRM = ET_YRM(Ykron)
     %% Debemos reducir el sistema para eliminar las barras PQ.
     
     Gk = real(Ykron);
@@ -10,17 +10,26 @@ function [YRM, YaRM, YbRM, YcRM, YdRM] = ET_YRM(Ykron)
 
     
     nk = size(Ykron, 1);
-    YaRM = zeros(nk, nk);
-    YbRM = zeros(nk, nk);
+    YRM = zeros(2*nk, 2*nk);
+    
     %% Ahora esta matriz la convertimos a RM
     for i = 1:nk
         for j = 1:nk
-            YaRM(i, j) = Gk(i, j);
-            YbRM(i, j) = -Bk(i, j);
+            if(i == j)
+                YRM(2*i-1, 2*i-1) = Gk(i,i);
+                YRM(2*i, 2*i) = Gk(i,i);
+                
+                YRM(2*i-1, 2*i) = -Bk(i,i);
+                YRM(2*i, 2*i-1) = Bk(i,i);
+            end
+            
+            if(i ~= j)
+                YRM(2*i-1, 2*j-1) = Gk(i,j);
+                YRM(2*i, 2*j) = Gk(i,j);
+                
+                YRM(2*i-1, 2*j) = -Bk(i,j);
+                YRM(2*i, 2*j-1) = Bk(i,j);
+            end
         end
     end
-    YdRM = YaRM;
-    YcRM = -YbRM;
-
-    YRM = [YaRM YbRM; YcRM YdRM];
 end

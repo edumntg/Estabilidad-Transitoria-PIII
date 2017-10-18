@@ -8,8 +8,8 @@ clear all
     % Hoja 4: Datos de ramas postfalla
     % Hoja 5: Generadores
 
-% DATAFILE = 'BUSDATA.xlsx';
-DATAFILE = 'Datos9barras_confalla.xlsx';
+DATAFILE = 'BUSDATA.xlsx';
+% DATAFILE = 'Datos9barras_confalla.xlsx';
 
 f = 60;
 w0 = 2*pi*f;
@@ -35,14 +35,19 @@ nl_falla = size(LINEDATA_FALLA, 1);     % el numero de filas en el archivo excel
 nl_post = size(LINEDATA_POST, 1);       % el numero de filas en el archivo excel es igual al numero de ramas
 ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel es igual al numero de generadores
 
-[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0);
-[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1);
-[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0);
+[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0, [], []);
+[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1, [], []);
+[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0, [], []);
 
 [V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
 Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, Gp, Bp, gp, bp);
 
 ET_PrintFDC;
+
+%% Una vez que se realizo el FDC, se pueden modelar las cargas como impedancia y se agregan a la Ybus
+[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0, V, theta);
+[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1, V, theta);
+[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0, V, theta);
 
 Pm = Pgen; 
 
@@ -88,9 +93,9 @@ YbusExtpt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);    
 [YKronRpt, YaRpt, YbRpt, YcRpt, YdRpt] = ET_Kron(Ybuspt, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 %% Matrices RM
-[YRMp, YaRMp, YbRMp, YcRMp, YdRMp] = ET_YRM(YKronRp);
-[YRMf, YaRMf, YbRMf, YcRMf, YdRMf] = ET_YRM(YKronRf);
-[YRMpt, YaRMpt, YbRMpt, YcRMpt, YdRMpt] = ET_YRM(YKronRpt);
+YRMp = ET_YRM(YKronRp);
+YRMf = ET_YRM(YKronRf);
+YRMpt = ET_YRM(YKronRpt);
 
 %% SHUNTS de los equivalentes de Kron Extendidos
 x0 = zeros(1, size(YKronp, 1));
@@ -106,11 +111,16 @@ x0 = zeros(1, size(YKronpt, 1));
 YShuntKronpt = ET_KronShunt(x);
 
 %% Calculos de los VRM e IRM
-[VRMp, IRMp] = ET_VRMIRM(V, theta, YRMp);
-[VRMf, IRMf] = ET_VRMIRM(V, theta, YRMf);
-[VRMp, IRMpt] = ET_VRMIRM(V, theta, YRMpt);
+[VRMp, IRMp] = ET_VRMIRM(V, theta, YRMp, BUSDATA);
+[VRMf, IRMf] = ET_VRMIRM(V, theta, YRMf, BUSDATA);
+[VRMp, IRMpt] = ET_VRMIRM(V, theta, YRMpt, BUSDATA);
 
-Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
+%% Calculos de las tensiones internas ficticas, a fin de obtener los angulos delta para cada generador
+[Efp, d0p] = ET_EFICT(VRMp, IRMp, GENDATA);
+
+Pmp = ET_PMEC(GENDATA, VRMp, IRMp);
+Pe0p = ET_Pe(GENDATA, Pmp, IRMp);
+% Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
 
 %% Caso pre falla
 w0 = zeros(1, ng);

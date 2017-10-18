@@ -29,12 +29,12 @@ function YbusExt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
     end
 
     % Agregamos las impedancias de cargas conectadas a las barras
-    for i = 1:n
-        if(abs(BUSDATA(i, 5) + 1i*BUSDATA(i, 6)) ~= 0) %Si hay Pload, entonces hay carga en esa barra
-            Zcarga(i) = (V(i)^2)/conj(BUSDATA(i, 5) + 1i*BUSDATA(i, 6));
-            YbusExt(i + n_gen, i + n_gen) = YbusExt(i + n_gen, i + n_gen) + 1/Zcarga(i);
-        end
-    end
+%     for i = 1:n
+%         if(abs(BUSDATA(i, 5) + 1i*BUSDATA(i, 6)) ~= 0) %Si hay Pload, entonces hay carga en esa barra
+%             Zcarga(i) = (V(i)^2)/conj(BUSDATA(i, 5) + 1i*BUSDATA(i, 6));
+%             YbusExt(i + n_gen, i + n_gen) = YbusExt(i + n_gen, i + n_gen) + 1/Zcarga(i);
+%         end
+%     end
 
     YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) = YbusExt((n_gen + 1):n_nuevo, (n_gen + 1):n_nuevo) + Ybus(1:n, 1:n);
 
@@ -57,11 +57,11 @@ function YbusExt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
                 
                 %Se elimina Zcarga
                 
-                Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
-                if(Scarga ~= 0)
-                    Zcarga = V(bus)^2 /conj(Scarga);
-                    YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) - 1/Zcarga;
-                end
+%                 Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+%                 if(Scarga ~= 0)
+%                     Zcarga = V(bus)^2 /conj(Scarga);
+%                     YbusExt(bus + n_gen, bus + n_gen) = YbusExt(bus + n_gen, bus + n_gen) - 1/Zcarga;
+%                 end
                 
                 % Se elimina el shunt conectado
                 for j = 1:size(LINEDATA, 1)

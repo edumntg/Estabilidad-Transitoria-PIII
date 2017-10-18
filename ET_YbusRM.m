@@ -8,7 +8,7 @@
     % primeras barras enumeradas
     
     % La matriz extendida RM va a ser de tamaño 2*n
-function [YbusExt, YbusRM] = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
+function [YbusExt, YbusRM] = ET_YbusRM(GENDATA, BUSDATA, LINEDATA, V, Ybus, falla)
 
     n = size(Ybus, 1);                   % tamaño original del sistema
     n_gen = size(GENDATA, 1);
