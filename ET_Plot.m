@@ -28,13 +28,13 @@ function ET_Plot(wp, dp, Pep, wf, df, Pef, wpt, dpt, Pept, tvec)
 %     end
 %     title('Desviacion de velocidad');
 %     legend(plegend);
-    
-    figure(3)
-    for i = 1:ng
-        plot(ti:dt:tp, dp, tp:dt:td, df, td:dt:tf, dpt), grid minor
-    end
-    title('Angulo delta');
-    legend(plegend);
+%     
+%     figure(3)
+%     for i = 1:ng
+%         plot(ti:dt:tp, dp, tp:dt:td, df, td:dt:tf, dpt), grid minor
+%     end
+%     title('Angulo delta');
+%     legend(plegend);
 
 %     wtot = zeros(ng, length(ti:dt:tf-dt-dt));
     k = 1;

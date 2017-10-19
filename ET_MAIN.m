@@ -1,5 +1,5 @@
 %% Programa generico para estabilidad transitoria
-clear all
+clc, clear all, close all
 
 %% Los datos del archivo Excel se especifican de la siguiente manera
     % Hoja 1: Datos de barras
@@ -8,9 +8,9 @@ clear all
     % Hoja 4: Datos de ramas postfalla
     % Hoja 5: Generadores
 
-DATAFILE = 'BUSDATA.xlsx';
+% DATAFILE = 'BUSDATA.xlsx';
 % DATAFILE = 'Datos9barras_confalla.xlsx';
-
+DATAFILE = 'BUSDATA_fallabarra.xlsx';
 f = 60;
 w0 = 2*pi*f;
 
@@ -18,7 +18,7 @@ ShowUnits = 0;
 Vb = 115;
 Sb = 100;
 
-[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA] = ET_LoadData(DATAFILE);
+[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE);
 
 %% No tocar
 ti = 0;
@@ -35,96 +35,80 @@ nl_falla = size(LINEDATA_FALLA, 1);     % el numero de filas en el archivo excel
 nl_post = size(LINEDATA_POST, 1);       % el numero de filas en el archivo excel es igual al numero de ramas
 ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel es igual al numero de generadores
 
-[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0, [], []);
-[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1, [], []);
-[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0, [], []);
+%% Aqui se cargaran en vectores los parametros de las maquinas como lo son resistencias, reactancias, constantes de
+% tiempo y constantes de inercia
+for i = 1:ng
+    Ra(i, 1) = GENDATA(i, 6);
+    Xq(i, 1) = GENDATA(i, 7);
+    Xqp(i, 1) = GENDATA(i, 8);
+    Xqpp(i, 1) = GENDATA(i, 9);
+    Xd(i, 1) = GENDATA(i, 10);
+    Xdp(i, 1) = GENDATA(i, 11);
+    Xdpp(i, 1) = GENDATA(i, 12);
+    Tq0p(i, 1) = GENDATA(i, 13);
+    Td0p(i, 1) = GENDATA(i, 14);
+    H(i, 1) = GENDATA(i, 15);
+end
+
+
+[Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, [], [], []);
+% [Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, [], [], []);
+% [Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, [], [], []);
 
 [V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
-Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, Gp, Bp, gp, bp);
+Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, G_pre, B_pre, g_pre, b_pre);
 
 ET_PrintFDC;
 
 %% Una vez que se realizo el FDC, se pueden modelar las cargas como impedancia y se agregan a la Ybus
-[Ybusp, Gp, Bp, gp, bp] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, 0, V, theta);
-[Ybusf, Gf, Bf, gf, bf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, 1, V, theta);
-[Ybuspt, Gpt, Bpt, gpt, bpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, 0, V, theta);
+[Ybusc_pre, Gc_pre, Bc_pre, gc_pre, bc_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, V, theta, []);
+[Ybuscf, Gcf, Bcf, gcf, bcf] = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, V, theta, FALLADATA);
+[Ybuscpt, Gcpt, Bcpt, gcpt, bcpt] = ET_Ybus(BUSDATA, LINEDATA_POST, n, V, theta, []);
 
 Pm = Pgen; 
 
-%% Calculos de tensiones internas de los generadores
-n_gen = size(GENDATA, 1);
-for g = 1:n_gen
-    
-    H(g) = GENDATA(g, 6);
-    Em(g) = GENDATA(g, 4);
-    Eang(g) = GENDATA(g, 5);
-    E(g) = Em(g)*(cos(Eang(g)) + 1i*sin(Eang(g)));
-    
-    if(Em(g) == -1) % No posee tension interna declarada
-        Sgen = (Pgen(g) + 1i*Qgen(g));
-        if(abs(Sgen) > 0)
-            Zgen = GENDATA(g, 2) + 1i*GENDATA(g, 3);
-            barra = GENDATA(g, 1);
-            Vbarra = V(barra)*(cos(theta(barra)) + 1i*sin(theta(barra)));
-            Ibarra(g) = conj(Sgen/Vbarra);
-            Ef = Vbarra + Ibarra(g)*Zgen;
-            GENDATA(g, 4) = abs(Ef);
-            GENDATA(g, 5) = angle(Ef);
-            d0(g) = angle(Ef);
-            E(g) = Ef;
-            Em(g) = abs(Ef);
-            Eang(g) = angle(Ef);
-        end
-    end
-end
-
-YbusExtp = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_PRE, V, Ybusp, 0);                     % Se arma la matriz extendida del sistema
-YbusExtf = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_FALLA, V, Ybusf, 1);                     % Se arma la matriz extendida del sistema
-YbusExtpt = ET_YbusExtendida(GENDATA, BUSDATA, LINEDATA_POST, V, Ybuspt, 0);                  % Se arma la matriz extendida del sistema
-
-%% Estas son los equivalentes de Kron de la matriz extendia (que incluye las impedancias de los gen)
-[YKronp, Yap, Ybp, Ycp, Ydp] = ET_KronExtendida(YbusExtp, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronf, Yaf, Ybf, Ycf, Ydf] = ET_KronExtendida(YbusExtf, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronpt, Yapt, Ybpt, Ycpt, Ydpt] = ET_KronExtendida(YbusExtpt, n_gen);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-
 %% Estos son los equivalentes de Kron sin impedancias de generadores. En este equivalente se eliminan barras PQ
-[YKronRp, YaRp, YbRp, YcRp, YdRp] = ET_Kron(Ybusp, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronRf, YaRf, YbRf, YcRf, YdRf] = ET_Kron(Ybusf, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-[YKronRpt, YaRpt, YbRpt, YcRpt, YdRpt] = ET_Kron(Ybuspt, BUSDATA);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKron_pre, YaR_pre, YbR_pre, YcR_pre, YdR_pre] = ET_Kron(Ybusc_pre, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronRf, YaRf, YbRf, YcRf, YdRf] = ET_Kron(Ybuscf, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+[YKronRpt, YaRpt, YbRpt, YcRpt, YdRpt] = ET_Kron(Ybuscpt, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 %% Matrices RM
-YRMp = ET_YRM(YKronRp);
+YKrm_pre = ET_YRM(YKron_pre);
 YRMf = ET_YRM(YKronRf);
 YRMpt = ET_YRM(YKronRpt);
 
-%% SHUNTS de los equivalentes de Kron Extendidos
-x0 = zeros(1, size(YKronp, 1));
-[x,fvalp,exitflagp,outputp,jacobianp] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronp), x0);
-YShuntKronp = ET_KronShunt(x);
-
-x0 = zeros(1, size(YKronf, 1));
-[x,fvalf,exitflagf,outputf,jacobianf] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronf), x0);
-YShuntKronf = ET_KronShunt(x);
-
-x0 = zeros(1, size(YKronpt, 1));
-[x,fvalpt,exitflagpt,outputpt,jacobianpt] = fsolve(@(x)ET_KronShunt_FSOLVE(x, YKronpt), x0);
-YShuntKronpt = ET_KronShunt(x);
-
 %% Calculos de los VRM e IRM
-[VRMp, IRMp] = ET_VRMIRM(V, theta, YRMp, BUSDATA);
+[Vrm_pre, Irm_pre] = ET_VRMIRM(V, theta, YKrm_pre, BUSDATA);
 [VRMf, IRMf] = ET_VRMIRM(V, theta, YRMf, BUSDATA);
 [VRMp, IRMpt] = ET_VRMIRM(V, theta, YRMpt, BUSDATA);
 
 %% Calculos de las tensiones internas ficticas, a fin de obtener los angulos delta para cada generador
-[Efp, d0p] = ET_EFICT(VRMp, IRMp, GENDATA);
+[Efp, d0p] = ET_EFICT(Vrm_pre, Irm_pre, GENDATA);
 
-Pmp = ET_PMEC(GENDATA, VRMp, IRMp);
-Pe0p = ET_Pe(GENDATA, Pmp, IRMp);
-% Pe0p = ET_Pe(Em, d0, YKronp, YShuntKronp);
+%% Calculo de la potencia mecanica de los generadores
+Pm_pre = ET_PMEC(GENDATA, Vrm_pre, Irm_pre);
 
-%% Caso pre falla
-w0 = zeros(1, ng);
-[wp, dp, Pep] = ET_Integracion(H, Em, d0, w0, Pe0p, Pm, YKronp, YShuntKronp, f, [ti dt tp]);
+%% Calculo de las potencias electricas pre-falla en bornes de los generadores
+Pe0p = ET_Pe(GENDATA, Pm_pre, Irm_pre);
+
+%% Calculo de la matriz T de Park para calcular la Eexc en el momento pre falla
+Mp = ET_MATRIZM(Ra, Xqp, Xdp, ng);
+T = ET_TPARK(d0p, ng);
+A = inv(T)*Mp*T;
+
+%% Calculo de tensiones y corrientes qd
+[Vqdp, Iqd, Vqp, Vdp, Iq, Id] = ET_VIQD(Vrm_pre, Irm_pre, T, ng);
+[Eqp, Edp] = ET_EQD(Vqp, Vdp, Iq, Id, Ra, Xdp, Xqp, ng);
+Eexc = ET_EEXC(Eqp, Edp);
+%% Se empieza con las integraciones
+% Se integrara por separado: prefalla, falla y postfalla
+   
+% Se definen los valores iniciales para caso pre-falla
+wo = zeros(ng, 1);
+do = d0p;
+Peo = Pe0p;
+
+[w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre] = ET_Integracion(wo, do, Peo, Iq, Id, Ra, Xq, Xqp, Xd, Xdp, Eqp, Edp, Tq0p, Td0p, Pm_pre, YKrm_pre, Mp, Eexc, w0, H, ng, [ti dt tp]);
 
 %% Caso falla
 for gi = 1:ng

@@ -4,9 +4,20 @@
 
 % global n nl ns Ybus
 
-function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla, V, theta)
+function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, V, theta, FALLADATA)
 
+    TIPO_FALLA = -1;
     Ybus = zeros(n,n);          % Se inicializa como una matriz de ceros
+    if(isempty(FALLADATA) == 0) % Hay una falla especificada
+        TIPO_FALLA = FALLADATA(1);
+        FALLA_FASES = FALLADATA(2);
+        FALLA_Bi = FALLADATA(3);
+        FALLA_Bj = FALLADATA(4);
+        if(TIPO_FALLA == 1) % Falla longitudinal
+            Ybus = zeros(n+1,n+1); % Si la falla es longitudinal, la matriz Ybus tendra una barra adicional
+        end
+    end
+
 
     g = zeros(n, n);
     b = zeros(n, n);
@@ -56,51 +67,52 @@ function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, falla, V, theta)
         end
     end
     
-    % Si nos encontramos en situacion de falla, debemos agregar la
-    % impedancia de falla a la barra y eliminar las impedancias de shunts
-    if(falla)
-        for i = 1:n
-            if(BUSDATA(i, 10) ~= 0) % barra con falla especificada
-                
-                % Asumimos en primera instancia que es una falla trifasica,
-                % de esta forma se cortocircuitan las cargas y los shunts
-                bus = BUSDATA(i, 1);
-                Zfalla = BUSDATA(i, 11);
-                
-                % Se agrega Zfalla
-                if(Zfalla ~= 0)
-                	Ybus(bus, bus) = Ybus(bus, bus) + 1/Zfalla;
-                end
-                
-                % Se elimina el shunt conectado
-                for j = 1:size(LINEDATA, 1)
-                    if(LINEDATA(j, 1) == LINEDATA(j, 2) && LINEDATA(j, 1) == bus)
-                        % Es shunt y ademas esta conectado a la barra de
-                        % estudio
-                        Zshunt = 1i*LINEDATA(j, 4);
-                        Ybus(bus, bus) = Ybus(bus, bus) - 1/Zshunt;
-                    end
-                end
-                
-                %% Si V y theta no estan vacios, significa que ya se realizo el FDC
-                % Por tanto ya se pueden remover las impedancias de carga a las barras
-                % especificas con falla
-                if(isempty(V) == 0) % Vector voltajes no esta vacio
-                    for i = 1:size(BUSDATA, 1)
-                        bus = BUSDATA(i, 1);
-                        Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
-                        if(abs(Scarga ~= 0))
-                            Zcarga = V(i)^2 /conj(Scarga);
+    % Si se definio un tipo de falla entonces hay que aplicar
+    if(TIPO_FALLA ~= -1) % Falla definida
+        Zfalla = 1e-10;
+        if(TIPO_FALLA == 0) % Falla en barra
+            bus = FALLA_Bi;
+            % Agregamos la impedancia de falla a la barra fallada, y
+            % borramos las impedancias de carga y shunts conectadas a esa
+            % barra
 
-                            Ybus(bus, bus) = Ybus(bus, bus) - 1/Zcarga;
-                        end
+            Ybus(bus, bus) = Ybus(bus, bus) + 1/Zfalla;
+            %% Eliminamos impedancia de carga
+            for i = 1:size(BUSDATA, 1)
+                if(bus == BUSDATA(i, 1))
+                    Scarga = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+                    if(abs(Scarga ~= 0))
+                        Zcarga = V(i)^2 /conj(Scarga);
+
+                        Ybus(bus, bus) = Ybus(bus, bus) - 1/Zcarga;
                     end
+                    break;
                 end
-                
             end
+            
+            %% Se elimina el shunt conectado
+            for j = 1:size(LINEDATA, 1)
+                if(LINEDATA(j, 1) == LINEDATA(j, 2) && LINEDATA(j, 1) == bus)
+                    % Es shunt y ademas esta conectado a la barra de
+                    % estudio
+                    Zshunt = 1i*LINEDATA(j, 4);
+                    Ybus(bus, bus) = Ybus(bus, bus) - 1/Zshunt;
+                end
+            end
+            
+        %% Falla longitudinal
+        elseif(TIPO_FALLA == 1)
+            % Ya se ha definido la barra adicional y las impedancias para
+            % esa barra en el archivo Excel, solo nos queda agregar la
+            % impedancia de falla a la barra
+            
+            % Esta barra de falla siempre se encontrara en el ultimo
+            % elemento de la matriz Ybus
+            ny = size(Ybus, 1);
+            Ybus(ny, ny) = Ybus(ny, ny) + 1/Zfalla;
+            
         end
     end
-    
 
     G = real(Ybus);
     B = imag(Ybus);
