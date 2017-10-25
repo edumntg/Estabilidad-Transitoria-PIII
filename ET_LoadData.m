@@ -8,10 +8,10 @@
     % Hoja 5: Generadores
 function [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE)
     BUSDATA = xlsread(DATAFILE, 1);
-    LINEDATA_PRE = xlsread(DATAFILE, 2);
-    LINEDATA_FALLA = xlsread(DATAFILE, 3);
-    LINEDATA_POST = xlsread(DATAFILE, 4);
-    GENDATA = xlsread(DATAFILE, 5);
-    FALLADATA = xlsread(DATAFILE, 6);
-    SIMULATIONDATA = xlsread(DATAFILE, 7);
+    LINEDATA_PRE = xlsread(DATAFILE, 3);
+    LINEDATA_FALLA = xlsread(DATAFILE, 4);
+    LINEDATA_POST = xlsread(DATAFILE, 5);
+    GENDATA = xlsread(DATAFILE, 6);
+    FALLADATA = xlsread(DATAFILE, 7);
+    SIMULATIONDATA = xlsread(DATAFILE, 8);
 end

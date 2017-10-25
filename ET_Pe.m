@@ -1,17 +1,12 @@
 %% Este script calculara las expresiones de la ecuacion de potencia para los generadores
 
-function Pe = ET_Pe(GENDATA, Pm, IRM)
+function Pe = ET_Pe(Pm, IRM, Ra, ng)
 
     %% Aprovechamos y calculamos las potencias pre-falla que deben dar igual a lo que da el flujo de carga
     
-    for i = 1:size(GENDATA, 1)
-        
-        Ra = GENDATA(i, 7);
-        
+    for i = 1:ng  
         It = IRM(2*i-1) + 1i*IRM(2*i);
-        
-        Pe(i) = Pm(i) - Ra*abs(It)^2;
-        
+        Pe(i) = Pm(i) - Ra(i)*abs(It)^2;     
     end
 end
 

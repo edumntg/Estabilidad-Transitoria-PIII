@@ -29,7 +29,7 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
         kf = 1;
         kpt = 1;
         k = 1;
-        for t = ti:dt:tp-dt
+        for t = ti:dt:tp
             wtot(i, k) = w_pre(i, kp);
             dtot(i, k) = d_pre(i, kp);
             Eqptot(i, k) = Eqp_pre(i, kp);
@@ -37,7 +37,7 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
             kp = kp + 1;
             k = k + 1;
         end
-        for t = tp:dt:td-dt
+        for t = tp:dt:td
             wtot(i, k) = w_falla(i, kf);
             dtot(i, k) = d_falla(i, kf);
             Eqptot(i, k) = Eqp_falla(i, kf);
@@ -57,28 +57,28 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
     
     figure(2)
     for i = 1:ng
-        plot(ti:dt:tf, wtot), grid minor
+        plot(wtot(1, 1:length(wtot)), grid minor, hold on
     end
     title('Desviacion de velocidad');
     legend(plegend);
     
     figure(3)
     for i = 1:ng
-        plot(ti:dt:tf, dtot), grid minor
+        plot(dtot), grid minor
     end
     title('Angulo delta');
     legend(plegend);
     
     figure(4)
     for i = 1:ng
-        plot(ti:dt:tf, Eqptot), grid minor
+        plot(Eqptot), grid minor
     end
     title('Eqp');
     legend(plegend);
     
     figure(5)
     for i = 1:ng
-        plot(ti:dt:tf, Edptot), grid minor
+        plot(Edptot), grid minor
     end
     title('Edp');
     legend(plegend);
