@@ -1,4 +1,4 @@
-function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_falla, Pe_falla, Eqp_falla, Edp_falla, Vt_falla, w_post, d_post, Pe_post, Eqp_post, Edp_post, Vt_post, ng, tvec)
+function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, w_falla, d_falla, Pe_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, w_post, d_post, Pe_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, ng, tvec)
 
     f = 60;
     
@@ -23,13 +23,23 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
     legend(plegend);
     hold off;
     
+    figure(2), hold on
+    for i = 1:ng
+        plot(ti:dt:tp, Eqp_pre, tp:dt:td, E_falla, td:dt:tf, Pe_post), grid minor
+        line([tp tp], [Pe_falla(i, 1) Pe_pre(i, length(Pe_pre))]);
+        line([td td], [Pe_post(i, 1) Pe_falla(i, length(Pe_falla))]);
+    end
+    title('Potencia electrica');
+    legend(plegend);
+    hold off;
+    
     k = 1;
     for i = 1:ng
         kp = 1;
         kf = 1;
         kpt = 1;
         k = 1;
-        for t = ti:dt:tp
+        for t = ti:dt:tp-dt
             wtot(i, k) = w_pre(i, kp);
             dtot(i, k) = d_pre(i, kp);
             Eqptot(i, k) = Eqp_pre(i, kp);
@@ -37,7 +47,7 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
             kp = kp + 1;
             k = k + 1;
         end
-        for t = tp:dt:td
+        for t = tp:dt:td-dt
             wtot(i, k) = w_falla(i, kf);
             dtot(i, k) = d_falla(i, kf);
             Eqptot(i, k) = Eqp_falla(i, kf);
@@ -57,28 +67,28 @@ function ET_Plot(w_pre, d_pre, Pe_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_fall
     
     figure(2)
     for i = 1:ng
-        plot(wtot(1, 1:length(wtot)), grid minor, hold on
+        plot(ti:dt:tf, wtot), grid minor
     end
     title('Desviacion de velocidad');
     legend(plegend);
     
     figure(3)
     for i = 1:ng
-        plot(dtot), grid minor
+        plot(ti:dt:tf, dtot), grid minor
     end
     title('Angulo delta');
     legend(plegend);
     
     figure(4)
     for i = 1:ng
-        plot(Eqptot), grid minor
+        plot(ti:dt:tf, Eqptot), grid minor
     end
     title('Eqp');
     legend(plegend);
     
     figure(5)
     for i = 1:ng
-        plot(Edptot), grid minor
+        plot(ti:dt:tf, Edptot), grid minor
     end
     title('Edp');
     legend(plegend);

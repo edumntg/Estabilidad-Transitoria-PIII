@@ -102,13 +102,14 @@ Pegap_pre0 = Pmgap_pre;
 
 %% Calculo de la matriz T de Park para calcular la Eexc en el momento pre falla
 Mp = ET_MATRIZM(Ra, Xqp, Xdp, ng);
+Mpp = ET_MATRIZM(Ra, Xqpp, Xdpp, ng);
 T = ET_TPARK(d0_pre, ng);
 A = inv(T)*inv(Mp)*T;
+App = inv(T)*inv(Mpp)*T;
 
 %% Calculo de tensiones y corrientes qd
 [Vqdp, Iqd, Vqp, Vdp, Iq, Id] = ET_VIQD(Vrm_pre, Irm_pre, T, ng);
-[Eq_pre0, Ed_pre0, Eqp_pre0, Edp_pre0, Eexc] = ET_EQDEXC(Vqp, Vdp, Iq, Id, Ra, Xd, Xdp, Xq, Xqp, ng);
-
+[Eq_pre0, Ed_pre0, Eqp_pre0, Edp_pre0, Eqpp_pre0, Edpp_pre0, Eexc] = ET_EQDEXC(Vqp, Vdp, Iq, Id, Ra, Xd, Xdp, Xdpp, Xq, Xqp, Xqpp, ng);
 %% %%%%%%%%%%%%%%%%%%%%%%%%%% Se empieza con las integraciones %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Se integrara por separado: prefalla, falla y postfalla
 
@@ -118,7 +119,7 @@ w0 = zeros(ng, 1);
 d0 = d0_pre;
 Pegap0 = Pegap_pre0;
 
-[w_pre, d_pre, Pegap_pre, Eqp_pre, Edp_pre, Vt_pre, theta_pre, Iq_pre, Id_pre] = ET_Integracion(w0, d0, Pegap0, Iq, Id, Ra, Xq, Xqp, Xd, Xdp, Eqp_pre0, Edp_pre0, Tq0p, Td0p, Pmgap_pre, YKrm_pre, Ybusc_pre, Mp, Eexc, we, H, ng, n, [ti dt tp]);
+[w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Iq_pre, Id_pre] = ET_Integracion(w0, d0, Pegap0, Iq, Id, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp_pre0, Eqpp_pre0, Edp_pre0, Edpp_pre0, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_pre, Ybusc_pre, Mp, Mpp, Eexc, we, H, ng, n, [ti dt tp]);
 
 %% Caso falla
 for i = 1:ng
@@ -127,8 +128,10 @@ for i = 1:ng
     Pegap0(i) = Pegap_pre(i, length(Pegap_pre));
     Eqp0(i) = Eqp_pre(i, length(Eqp_pre));
     Edp0(i) = Edp_pre(i, length(Edp_pre));
+    Eqpp0(i) = Eqpp_pre(i, length(Eqpp_pre));
+    Edpp0(i) = Edpp_pre(i, length(Edpp_pre));
 end
-[w_falla, d_falla, Pegap_falla, Eqp_falla, Edp_falla, Vt_falla, theta_falla, Iq_falla, Id_falla] = ET_Integracion(w0, d0, Pegap0, Iq_pre, Id_pre, Ra, Xq, Xqp, Xd, Xdp, Eqp0, Edp0, Tq0p, Td0p, Pmgap_pre, YKrm_falla, Ybusc_falla, Mp, Eexc, we, H, ng, n, [tp dt td]);
+[w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Iq_falla, Id_falla] = ET_Integracion(w0, d0, Pegap0, Iq_pre, Id_pre, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp0, Eqpp0, Edp0, Edpp0, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_falla, Ybusc_falla, Mp, Mpp, Eexc, we, H, ng, n, [tp dt td]);
 
 %% Caso post-falla
 for i = 1:ng
@@ -137,9 +140,11 @@ for i = 1:ng
     Pegap0(i) = Pegap_falla(i, length(Pegap_falla));
     Eqp0(i) = Eqp_falla(i, length(Eqp_falla));
     Edp0(i) = Edp_falla(i, length(Edp_falla));
+    Eqpp0(i) = Eqpp_falla(i, length(Eqpp_falla));
+    Edpp0(i) = Edpp_falla(i, length(Edpp_falla));
 end
-[w_post, d_post, Pegap_post, Eqp_post, Edp_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq_falla, Id_falla, Ra, Xq, Xqp, Xd, Xdp, Eqp_falla, Edp_falla, Tq0p, Td0p, Pmgap_pre, YKrm_post, Ybusc_post, Mp, Eexc, we, H, ng, n, [td dt tf]);
+[w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq_falla, Id_falla, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_post, Ybusc_post, Mp, Mpp, Eexc, we, H, ng, n, [td dt tf]);
 
 
 %% Plots
-ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Edp_pre, Vt_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Edp_falla, Vt_falla, w_post, d_post, Pegap_post, Eqp_post, Edp_post, Vt_post, ng, [ti tp td tf dt]);
+ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, ng, n, [ti tp td tf dt]);
