@@ -1,6 +1,6 @@
 %% Aqui se haran las iteraciones y se resolvera la ecuacion de oscilacion
 
-function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion(wo, do, Peo, Iqo, Ido, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqpo, Eqppo, Edpo, Edppo, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap, YKrm, Ybus, Mp, Mpp, Eexc, we, H, ng, n, tvec)
+function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id, Pmgap, Xv, Pc] = ET_Integracion(wo, do, Peo, Iqo, Ido, Eqpo, Eqppo, Edpo, Edppo, Pmgapo, Xvo, Pco, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm, Ybus, Mp, Mpp, Eexc, we, H, ng, n, tvec)
 
     ti = tvec(1);
     dt = tvec(2);
@@ -19,8 +19,9 @@ function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion
     theta = zeros(ng, length(ti:dt:tf));
     Iq = zeros(ng, length(ti:dt:tf));
     Id = zeros(ng, length(ti:dt:tf));
-    
-    Pmgapv = Pmgap;
+    Pmgap = zeros(ng, length(ti:dt:tf));
+    Xv = zeros(ng, length(ti:dt:tf));
+    Pc = zeros(ng, length(ti:dt:tf));
     
     for i = 1:ng
         wv(i) = wo(i);
@@ -32,6 +33,9 @@ function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion
         Edppv(i) = Edppo(i);
         Iqv(i) = Iqo(i);
         Idv(i) = Ido(i);
+        Pmgapv(i) = Pmgapo(i);
+        Xvv(i) = Xvo(i);
+        Pcv(i) = Pco(i);
     end
 
     k = 1;
@@ -41,12 +45,16 @@ function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion
             v = 1;
             for i = 1:ng
                 
-                x0(v) = w(i, k - 1); % w0
-                x0(v+1) = d(i, k - 1); % d0
-                x0(v+2) = Eqp(i, k - 1); % Eqp0
-                x0(v+3) = Edp(i, k - 1); % Edp0
-                x0(v+4) = Eqpp(i, k - 1); % Eqpp0
-                x0(v+5) = Edpp(i, k - 1); % Edpp0
+                x0(v) = w(i, k - 1);            % w0
+                x0(v+1) = d(i, k - 1);          % d0
+                x0(v+2) = Eqp(i, k - 1);        % Eqp0
+                x0(v+3) = Edp(i, k - 1);        % Edp0
+                x0(v+4) = Eqpp(i, k - 1);       % Eqpp0
+                x0(v+5) = Edpp(i, k - 1);       % Edpp0
+                x0(v+6) = Pmgap(i, k - 1);      % Pmgap
+                x0(v+7) = Xv(i, k - 1);         % Xv
+                x0(v+8) = Pc(i, k - 1);         % Pc
+                
                 
                 wv(i) = w(i, k - 1);
                 dv(i) = d(i, k - 1);
@@ -57,24 +65,29 @@ function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion
                 Edppv(i) = Edpp(i, k - 1);
                 Iqv(i) = Iq(i, k - 1);
                 Idv(i) = Id(i, k - 1);
+                Pmgapv(i) = Pmgap(i, k - 1);
+                Xvv(i) = Xv(i, k - 1);
+                Pcv(i) = Pc(i, k - 1);
                 
-                v = v + 6;
+                v = v + 9;
             end
         else
             v = 1;
             for i = 1:ng
-                x0(v) = wv(i); % w0
-                x0(v+1) = dv(i); % d0
-                x0(v+2) = Eqpv(i); % Eqp0
-                x0(v+3) = Edpv(i); % Edp0
-                x0(v+4) = Eqppv(i); % Eqpp0
-                x0(v+5) = Edppv(i); % Edpp0
-                v = v + 6;
+                x0(v) = wv(i);                  % w0
+                x0(v+1) = dv(i);                % d0
+                x0(v+2) = Eqpv(i);              % Eqp0
+                x0(v+3) = Edpv(i);              % Edp0
+                x0(v+4) = Eqppv(i);             % Eqpp0
+                x0(v+5) = Edppv(i);             % Edpp0
+                x0(v+6) = Pmgapv(i);            % Pmgap
+                x0(v+7) = Xvv(i);               % Xv
+                x0(v+8) = Pcv(i);               % Pc
+                v = v + 9;
             end
         end
-
-        [x,fval,exitflag,output,jacobian] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Iqv, Idv, Mp, Mpp, Pegapv, Pmgapv, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Eexc, H, we, ng, dt), x0, options);
         
+        [x,fval,exitflag,output,jacobian] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Iqv, Idv, Pegapv, Pmgapv, Xvv, Pcv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, we, ng, dt), x0, options);
         v = 1;
         for i = 1:ng
             w(i, k) = x(v);
@@ -83,7 +96,10 @@ function [w, d, Pegap, Eqp, Eqpp, Edp, Edpp, Vt, theta, Iq, Id] = ET_Integracion
             Edp(i, k) = x(v+3);
             Eqpp(i, k) = x(v+4);
             Edpp(i, k) = x(v+5);
-            v = v + 6;
+            Pmgap(i, k) = x(v+6);
+            Xv(i, k) = x(v+7);
+            Pc(i, k) = x(v+8);
+            v = v + 9;
         end
         
         Tn = ET_TPARK(d(1:ng, k), ng);

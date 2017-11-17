@@ -1,5 +1,5 @@
 %% Programa generico para estabilidad transitoria
-clc, clear all, close all
+clc, clear, close all;
 
 %% Los datos del archivo Excel se especifican de la siguiente manera
     % Hoja 1: Datos de barras
@@ -16,6 +16,8 @@ DATAFILE = 'Datos9barras_confalla.xlsx';
 ShowUnits = 0;
 Vb = 115;
 Sb = 100;
+
+tic
 
 [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE);
 
@@ -63,13 +65,28 @@ for i = 1:ng
         Tq0pp(i, 1) = Inf;
     end
     H(i, 1) = GENDATA(i, 13);
+    
+    Kv(i) = GENDATA(i, 14);
+    Ki(i) = GENDATA(i, 15);
+    Kt(i) = GENDATA(i, 16);
+      
+    R(i, 1) = GENDATA(i, 17);
+    
+    Tv(i, 1) = GENDATA(i, 18);
+    if(Tv(i, 1) >= 1e10)
+        Tv(i, 1) = Inf;
+    end
+    
+    Tt(i, 1) = GENDATA(i, 19);
+    if(Tt(i, 1) >= 1e10)
+        Tt(i, 1) = Inf;
+    end
 end
-
-
+% R = R./f;
 [Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, [], [], []);
 
 [V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
-Qflow, Qflow_bus, Ploss, Qloss] = ET_FDC(BUSDATA, LINEDATA_PRE, G_pre, B_pre, g_pre, b_pre);
+Qflow, Qflow_bus, Ploss, Qloss, Pload, Qload] = ET_FDC(BUSDATA, LINEDATA_PRE, G_pre, B_pre, g_pre, b_pre);
 
 ET_PrintFDC;
 
@@ -118,10 +135,18 @@ App = inv(T)*inv(Mpp)*T;
 w0 = zeros(ng, 1);
 d0 = d0_pre;
 Pegap0 = Pegap_pre0;
+Eqp0 = Eqp_pre0;
+Eqpp0 = Eqpp_pre0;
+Edp0 = Edp_pre0;
+Edpp0 = Edpp_pre0;
+Pmgap0 = Pmgap_pre;
+Xv0 = Pegap0;
+Pc0 = Pegap0;
 
-[w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Iq_pre, Id_pre] = ET_Integracion(w0, d0, Pegap0, Iq, Id, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp_pre0, Eqpp_pre0, Edp_pre0, Edpp_pre0, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_pre, Ybusc_pre, Mp, Mpp, Eexc, we, H, ng, n, [ti dt tp]);
+[w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, Pmgap_pre, Xv_pre, Pc_pre] = ET_Integracion(w0, d0, Pegap0, Iq, Id, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_pre, Ybusc_pre, Mp, Mpp, Eexc, we, H, ng, n, [ti dt tp]);
 
 %% Caso falla
+
 for i = 1:ng
     w0(i) = w_pre(i, length(w_pre));
     d0(i) = d_pre(i, length(d_pre));
@@ -130,8 +155,12 @@ for i = 1:ng
     Edp0(i) = Edp_pre(i, length(Edp_pre));
     Eqpp0(i) = Eqpp_pre(i, length(Eqpp_pre));
     Edpp0(i) = Edpp_pre(i, length(Edpp_pre));
+    Pmgap0(i) = Pmgap_pre(i, length(Pmgap_pre));
+    Xv0(i) = Xv_pre(i, length(Xv_pre));
+    Pc0(i) = Pc_pre(i, length(Pc_pre));
 end
-[w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Iq_falla, Id_falla] = ET_Integracion(w0, d0, Pegap0, Iq_pre, Id_pre, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp0, Eqpp0, Edp0, Edpp0, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_falla, Ybusc_falla, Mp, Mpp, Eexc, we, H, ng, n, [tp dt td]);
+
+[w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, Pmgap_falla, Xv_falla, Pc_falla] = ET_Integracion(w0, d0, Pegap0, Iq_pre, Id_pre, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_falla, Ybusc_falla, Mp, Mpp, Eexc, we, H, ng, n, [tp dt td]);
 
 %% Caso post-falla
 for i = 1:ng
@@ -142,9 +171,39 @@ for i = 1:ng
     Edp0(i) = Edp_falla(i, length(Edp_falla));
     Eqpp0(i) = Eqpp_falla(i, length(Eqpp_falla));
     Edpp0(i) = Edpp_falla(i, length(Edpp_falla));
+    Pmgap0(i) = Pmgap_falla(i, length(Pmgap_falla));
+    Xv0(i) = Xv_falla(i, length(Xv_falla));
+    Pc0(i) = Pc_falla(i, length(Pc_falla));
 end
-[w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq_falla, Id_falla, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Tq0p, Tq0pp, Td0p, Td0pp, Pmgap_pre, YKrm_post, Ybusc_post, Mp, Mpp, Eexc, we, H, ng, n, [td dt tf]);
+[w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Iq_post, Id_post, Pmgap_post, Xv_post, Pc_post] = ET_Integracion(w0, d0, Pegap0, Iq_falla, Id_falla, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_post, Ybusc_post, Mp, Mpp, Eexc, we, H, ng, n, [td dt tf]);
 
+%% Velocidades en las barras
+for i = 1:n
+    vel_pre(i, 1:size(theta_pre, 2)-1) = diff(theta_pre(i, 1:size(theta_pre, 2)))./diff(ti:dt:tp);
+end
 
+for i = 1:n
+    vel_falla(i, 1:size(theta_falla, 2)-1) = diff(theta_falla(i, 1:size(theta_falla, 2)))./dt;
+end
+
+for i = 1:n
+    vel_post(i, 1:size(theta_post, 2)-1) = diff(theta_post(i, 1:size(theta_post, 2)))./dt;
+end
+
+% frecuencias
+f_pre = vel_pre./(2*pi) + f;
+f_falla = vel_falla./(2*pi) + f;
+f_post = vel_post./(2*pi) + f;
+
+%% Droops
+R = R./f;
+deltaP = 70/Sb; % negativo = bote de carga (deltaP)
+beta = sum(1./R);
+df = -(1/beta)*deltaP;
+for i = 1:ng
+    dPm(i) = -(1/R(i))*df*Sb;
+end
+
+toc
 %% Plots
-ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, ng, n, [ti tp td tf dt]);
+ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Pmgap_pre, Xv_pre, Pc_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Pmgap_falla, Xv_falla, Pc_falla, w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Pmgap_post, Xv_post, Pc_post, ng, n, [ti tp td tf dt]);
