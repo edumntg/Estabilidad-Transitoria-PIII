@@ -1,53 +1,8 @@
-function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, we, ng, dt)
+function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Iqv, Idv, Pegapv, Pmgapv, Xvv, Pcv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, we, ng, dt)
 
-    % Tendremos 9 ecuaciones por generador, en total 4*n_gen ecuaciones
-    % Tambien tendremos 9 variables, las cuales seran wn, dn, eqp, edp (n de nuevo)
+    % Tendremos 4 ecuaciones por generador, en total 4*n_gen ecuaciones
+    % Tambien tendremos 4 variables, las cuales seran wn, dn, eqp, edp (n de nuevo)
     Ka = 0.00;
-    
-    
-    wn = zeros(ng, 1);
-    dn = zeros(ng, 1);
-    Eqpn = zeros(ng, 1);
-    Edpn = zeros(ng, 1);
-    Eqppn = zeros(ng, 1);
-    Edppn = zeros(ng, 1);
-    Pmgapn = zeros(ng, 1);
-    Xvn = zeros(ng, 1);
-    Pcn = zeros(ng, 1);
-    
-    Iqn = zeros(ng, 1);
-    Idn = zeros(ng, 1);
-    Vtn = zeros(ng, 1);
-    Itn = zeros(ng, 1);
-    Pegapn = zeros(ng, 1);
-    Paceln = zeros(ng, 1);
-    Pamortn = zeros(ng, 1);
-    Pacelv = zeros(ng, 1);
-    Pamortv = zeros(ng, 1);
-    dwv = zeros(ng, 1);
-    ddv = zeros(ng, 1);
-    dEqpv = zeros(ng, 1);
-    dEdpv = zeros(ng, 1);
-    dEqppv = zeros(ng, 1);
-    dEdppv = zeros(ng, 1);
-    dPmgapv = zeros(ng, 1);
-    Xpv = zeros(ng, 1);
-    dXvv = zeros(ng, 1);
-    dPcv = zeros(ng, 1);
-    dwn = zeros(ng, 1);
-    ddn = zeros(ng, 1);
-    dEqpn = zeros(ng, 1);
-    dEdpn = zeros(ng, 1);
-    dEqppn = zeros(ng, 1);
-    dEdppn = zeros(ng, 1);
-    dPmgapn = zeros(ng, 1);
-    Xpn = zeros(ng, 1);
-    dXvn = zeros(ng, 1);
-    dPcn = zeros(ng, 1);
-        
-    F = zeros(9*ng, 1);
-    
-    
     
     v = 1;
     for i = 1:ng
@@ -77,8 +32,8 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     end
 
 %     Ermn = inv(Tn)*Eqdpn;
-    Ermn = Tn\Eqdppn;
-    Vrmn = (YKrm + Appn)\(Appn*Ermn);
+    Ermn = inv(Tn)*Eqdppn;
+    Vrmn = inv(YKrm + Appn)*Appn*Ermn;
     Irmn = YKrm*Vrmn;
     
     Iqdn = Tn*Irmn;
