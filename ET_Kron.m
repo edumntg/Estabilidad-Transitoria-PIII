@@ -16,5 +16,5 @@ function [Ykron, Ya, Yb, Yc, Yd] = ET_Kron(Ybus, ng)
     % La matriz Yd es igual a una matriz que va desde nPVS+1 hasta n
     Yd = Ybus(ng+1:n, ng+1:n);
     
-    Ykron = Ya - Yb*inv(Yd)*Yc;
+    Ykron = Ya - Yb*(Yd\Yc);
 end

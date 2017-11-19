@@ -18,9 +18,9 @@ function [V, th, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, Qflow, Qflo
     Vabs = zeros(n, 1);                             % Voltaje de cada barra (especificado)
     Ki = zeros(n, 1);                               % Factor de distribucion de cada barra
 
-    Sgen = zeros(n, 1);                             
-    Sload = zeros(n, 1);
-    Vrect = zeros(n, 1);
+%     Sgen = zeros(n, 1);                             
+%     Sload = zeros(n, 1);
+%     Vrect = zeros(n, 1);
 
     Pgen = zeros(n, 1);
     Qgen = zeros(n, 1);
@@ -40,6 +40,8 @@ function [V, th, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, Qflow, Qflo
     Qloss_total = 0;
     Pload = zeros(n, 1);
     Qload = zeros(n, 1);
+    Ploada = zeros(n, 1);
+    Qloada = zeros(n, 1);
     Sshunt = zeros(n, 1);
 
     X0 = zeros(2*n, 1);

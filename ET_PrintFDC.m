@@ -17,6 +17,9 @@ Vbp = Vb^ShowUnits;
 Sbp = Sb^ShowUnits;
 
 Vu = V.*Vbp;
+
+Ploadu = zeros(n, 1);
+Qloadu = zeros(n, 1);
 for i = 1:n
     Ploadu(i) = BUSDATA(i, 5)*Sbp;
     Qloadu(i) = BUSDATA(i, 6)*Sbp;
