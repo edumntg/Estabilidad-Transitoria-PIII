@@ -9,7 +9,7 @@ clc, clear, close all;
     % Hoja 5: Generadores
 
 % DATAFILE = 'BUSDATA.xlsx';
-DATAFILE = 'Datos9barras_confalla.xlsx';
+DATAFILE = 'Datos9barras.xlsx';
 % DATAFILE = 'BUSDATA_fallabarra.xlsx';
 % DATAFILE = 'BUSDATA_fallalong.xlsx';
 

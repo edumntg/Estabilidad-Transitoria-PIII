@@ -92,16 +92,17 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     for i = 1:ng
         wv(i) = w0(i);
         dv(i) = d0(i);
-        Pegapv(i) = Pegap0(i);
         Eqpv(i) = Eqp0(i);
         Edpv(i) = Edp0(i);
         Eqppv(i) = Eqpp0(i);
         Edppv(i) = Edpp0(i);
-        Iqv(i) = Iq0(i);
-        Idv(i) = Id0(i);
         Pmgapv(i) = Pmgap0(i);
         Xvv(i) = Xv0(i);
         Pcv(i) = Pc0(i);
+        
+        Pegapv(i) = Pegap0(i);
+        Iqv(i) = Iq0(i);
+        Idv(i) = Id0(i);
     end
     
     k = 1;
@@ -206,7 +207,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             Itn(i) = Irmn(2*i-1) + 1i*Irmn(2*i);
             
             Ign(i) = Itn(i);
-%             Pegap_pre(i, k) = real(Vtn(i)*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
+            Pegap_pre(i, k) = real(Vtn(i)*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
         end
         
         Vbn = Ybus_pre\Ign;
@@ -216,11 +217,6 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             theta_pre(i, k) = angle(Vbn(i));
         end
         
-        for i = 1:ng
-            Vt = Vt_pre(i, k)*(cos(theta_pre(i, k)) + 1i*sin(theta_pre(i, k)));
-        	Pegap_pre(i, k) = real(Vt*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
-        end
-        
         k = k + 1;
     end
     
@@ -228,16 +224,17 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     for i = 1:ng
         wv(i) = w_pre(i, size_pre);
         dv(i) = d_pre(i, size_pre);
-        Pegapv(i) = Pegap_pre(i, size_pre);
         Eqpv(i) = Eqp_pre(i, size_pre);
         Edpv(i) = Edp_pre(i, size_pre);
         Eqppv(i) = Eqpp_pre(i, size_pre);
         Edppv(i) = Edpp_pre(i, size_pre);
-        Iqv(i) = Iq_pre(i, size_pre);
-        Idv(i) = Id_pre(i, size_pre);
         Pmgapv(i) = Pmgap_pre(i, size_pre);
         Xvv(i) = Xv_pre(i, size_pre);
         Pcv(i) = Pc_pre(i, size_pre);
+        
+        Pegapv(i) = Pegap_pre(i, size_pre);
+        Iqv(i) = Iq_pre(i, size_pre);
+        Idv(i) = Id_pre(i, size_pre);
     end
     
     k = 1;
@@ -364,7 +361,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             
             Ign(i) = Itn(i);
             
-%             Pegap_falla(i, k) = real(Vtn(i)*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
+            Pegap_falla(i, k) = real(Vtn(i)*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
         end
         
         Vbn = Ybus_falla\Ign;
@@ -372,11 +369,6 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
         for i = 1:n
             Vt_falla(i, k) = abs(Vbn(i));
             theta_falla(i, k) = angle(Vbn(i));
-        end
-        
-        for i = 1:ng
-            Vt = Vt_falla(i, k)*(cos(theta_falla(i, k)) + 1i*sin(theta_falla(i, k)));
-        	Pegap_falla(i, k) = real(Vt*conj(Itn(i))) + Ra(i)*abs(Itn(i))^2;
         end
         
         k = k + 1;
@@ -389,16 +381,17 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     for i = 1:ng
         wv(i) = w_falla(i, size_falla);
         dv(i) = d_falla(i, size_falla);
-        Pegapv(i) = Pegap_falla(i, size_falla);
         Eqpv(i) = Eqp_falla(i, size_falla);
         Edpv(i) = Edp_falla(i, size_falla);
         Eqppv(i) = Eqpp_falla(i, size_falla);
         Edppv(i) = Edpp_falla(i, size_falla);
-        Iqv(i) = Iq_falla(i, size_falla);
-        Idv(i) = Id_falla(i, size_falla);
         Pmgapv(i) = Pmgap_falla(i, size_falla);
         Xvv(i) = Xv_falla(i, size_falla);
         Pcv(i) = Pc_falla(i, size_falla);
+        
+        Pegapv(i) = Pegap_falla(i, size_falla);
+        Iqv(i) = Iq_falla(i, size_falla);
+        Idv(i) = Id_falla(i, size_falla);
     end
     
     k = 1;

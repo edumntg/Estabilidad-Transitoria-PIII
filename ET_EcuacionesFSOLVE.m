@@ -46,26 +46,24 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     dPcn = zeros(ng, 1);
         
     F = zeros(9*ng, 1);
-    
-    
-    
+        
     v = 1;
     for i = 1:ng
-        wn(i, 1) = x(v);
-        dn(i, 1) = x(v+1);
-        Eqpn(i, 1) = x(v+2);
-        Edpn(i, 1) = x(v+3);
-        Eqppn(i, 1) = x(v+4);
-        Edppn(i, 1) = x(v+5);
-        Pmgapn(i, 1) = x(v+6);
-        Xvn(i, 1) = x(v+7);
-        Pcn(i, 1) = x(v+8);
+        wn(i) = x(v);
+        dn(i) = x(v+1);
+        Eqpn(i) = x(v+2);
+        Edpn(i) = x(v+3);
+        Eqppn(i) = x(v+4);
+        Edppn(i) = x(v+5);
+        Pmgapn(i) = x(v+6);
+        Xvn(i) = x(v+7);
+        Pcn(i) = x(v+8);
         v = v + 9;
     end
 
     Tn = ET_TPARK(dn, ng);
 %     An = inv(Tn)*inv(Mp)*Tn;
-    Appn = inv(Tn)*inv(Mpp)*Tn;
+    Appn = Tn\(Mpp\Tn);
     
     Eqdpn = zeros(2*ng, 1);
     Eqdppn = zeros(2*ng, 1);
