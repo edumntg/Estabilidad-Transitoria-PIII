@@ -154,14 +154,14 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             end
         end
         exitflag = 0;
-        iterations = 0;
+        iterations = 0;    
         while(exitflag ~= 1)
-            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_pre, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, JAULA, AGC, we, ng, dt), x0, options);
+            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_pre, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, AGC, JAULA, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
                 fprintf('FSOLVE no convergio en 100 iteraciones. Caso: pre-falla\n');
-                pause;
+                break;
             end
         end
         
@@ -183,8 +183,6 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 Xv_pre(i, k) = x(v+1);
                 Pc_pre(i, k) = x(v+2);
                 v = v + 3;
-            else
-                Pmgap_pre(i, k) = Pmgap0(i);
             end
             
             Eqdpn(2*i-1, 1) = Eqp_pre(i, k);
@@ -235,15 +233,11 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             dv(i) = d_pre(i, k);
             Eqpv(i) = Eqp_pre(i, k);
             Edpv(i) = Edp_pre(i, k);
-            if(JAULA(i) == 1)
-                Eqppv(i) = Eqpp_pre(i, k);
-                Edppv(i) = Edpp_pre(i, k);
-            end
-            if(AGC(i) == 1)
-                Pmgapv(i) = Pmgap_pre(i, k);
-                Xvv(i) = Xv_pre(i, k);
-                Pcv(i) = Pc_pre(i, k);
-            end
+            Eqppv(i) = Eqpp_pre(i, k);
+            Edppv(i) = Edpp_pre(i, k);
+            Pmgapv(i) = Pmgap_pre(i, k);
+            Xvv(i) = Xv_pre(i, k);
+            Pcv(i) = Pc_pre(i, k);
 
             Pegapv(i) = Pegap_pre(i, k);
             Iqv(i) = Iq_pre(i, k);
@@ -252,7 +246,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
         
         k = k + 1;
     end
-
+    pause
     %% Integracion falla
     
     k = 1;
@@ -265,17 +259,13 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 x0(v+2) = Eqp_falla(i, k - 1);
                 x0(v+3) = Edp_falla(i, k - 1);
                 v = v + 4;
-                if(JAULA(i) == 1)
-                    x0(v) = Eqpp_falla(i, k - 1);
-                    x0(v+1) = Edpp_falla(i, k - 1);
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    x0(v) = Pmgap_falla(i, k - 1);
-                    x0(v+1) = Xv_falla(i, k - 1);
-                    x0(v+2) = Pc_falla(i, k - 1);
-                    v = v + 3;
-                end
+                x0(v+4) = Eqpp_falla(i, k - 1);
+                x0(v+5) = Edpp_falla(i, k - 1);
+                x0(v+6) = Pmgap_falla(i, k - 1);
+                x0(v+7) = Xv_falla(i, k - 1);
+                x0(v+8) = Pc_falla(i, k - 1);
+                
+                v = v + 9;
             end
         else
             % Se va a realizar la primera integracion, por tanto los valores viejos seran los valores calculados como iniciales
@@ -285,35 +275,31 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 x0(v+1) = dv(i);                % d0
                 x0(v+2) = Eqpv(i);              % Eqp0
                 x0(v+3) = Edpv(i);              % Edp0
-                v = v + 4;
-                if(JAULA(i) == 1)
-                    x0(v) = Eqppv(i);             % Eqpp0
-                    x0(v+1) = Edppv(i);             % Edpp0
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    x0(v) = Pmgapv(i);            % Pmgap
-                    x0(v+1) = Xvv(i);               % Xv
-                    x0(v+2) = Pcv(i);               % Pc
-                    v = v + 3;
-                end
+                x0(v+4) = Eqppv(i);             % Eqpp0
+                x0(v+5) = Edppv(i);             % Edpp0
+                x0(v+6) = Pmgapv(i);            % Pmgap
+                x0(v+7) = Xvv(i);               % Xv
+                x0(v+8) = Pcv(i);               % Pc
+                
+                v = v + 9;
             end
         end
         
         exitflag = 0;
         iterations = 0;
         while(exitflag ~= 1)
-            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_falla, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, JAULA, AGC, we, ng, dt), x0, options);
+            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_falla, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
                 fprintf('FSOLVE no convergio en 100 iteraciones. Caso: falla\n');
-                pause;
+                break;
             end
         end
         
         %%  Se guardan los nuevos valores
         if(t == tp)
+            v = 1;
             for i = 1:ng
                 % Se esta en t0+, por tanto los valores de las variables de estado deben permanecer igual a t0-
                 % Estos corresponden a los ultimos calculados en
@@ -322,17 +308,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 d_falla(i, k) = d_pre(i, size_pre);
                 Eqp_falla(i, k) = Eqp_pre(i, size_pre);
                 Edp_falla(i, k) = Edp_pre(i, size_pre);
-                if(JAULA(i) == 1)
-                    Eqpp_falla(i, k) = Eqpp_pre(i, size_pre);
-                    Edpp_falla(i, k) = Edpp_pre(i, size_pre);
-                end
-                if(AGC(i) == 1)
-                    Pmgap_falla(i, k) = Pmgap_pre(i, size_pre);
-                    Xv_falla(i, k) = Xv_pre(i, size_pre);
-                    Pc_falla(i, k) = Pc_pre(i, size_pre);
-                else
-                    Pmgap_falla(i, k) = Pmgap0(i);
-                end
+                Eqpp_falla(i, k) = Eqpp_pre(i, size_pre);
+                Edpp_falla(i, k) = Edpp_pre(i, size_pre);
+                Pmgap_falla(i, k) = Pmgap_pre(i, size_pre);
+                Xv_falla(i, k) = Xv_pre(i, size_pre);
+                Pc_falla(i, k) = Pc_pre(i, size_pre);
+                v = v + 9;
             end
         else
             %   Si ya se esta en t0+ +dt entonces si se guarda el valor
@@ -343,42 +324,28 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 d_falla(i, k) = x(v+1);
                 Eqp_falla(i, k) = x(v+2);
                 Edp_falla(i, k) = x(v+3);
-                v = v + 4;
-                if(JAULA(i) == 1)
-                    Eqpp_falla(i, k) = x(v);
-                    Edpp_falla(i, k) = x(v+1);
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    Pmgap_falla(i, k) = x(v);
-                    Xv_falla(i, k) = x(v+1);
-                    Pc_falla(i, k) = x(v+2);
-                    v = v + 3;
-                else
-                    Pmgap_falla(i, k) = Pmgap0(i);
-                end
+                Eqpp_falla(i, k) = x(v+4);
+                Edpp_falla(i, k) = x(v+5);
+                Pmgap_falla(i, k) = x(v+6);
+                Xv_falla(i, k) = x(v+7);
+                Pc_falla(i, k) = x(v+8);
                 
                 Eqdpn(2*i-1, 1) = Eqp_falla(i, k);
                 Eqdpn(2*i, 1) = Edp_falla(i, k);
                 Eqdppn(2*i-1, 1) = Eqpp_falla(i, k);
                 Eqdppn(2*i, 1) = Edpp_falla(i, k);
                 
-                Eqd(2*i-1, 1) = Eqp_falla(i, k);
-                Eqd(2*i, 1) = Edp_falla(i, k);
-                if(JAULA(i) == 1)
-                    Eqd(2*i-1, 1) = Eqpp_falla(i, k);
-                    Eqd(2*i, 1) = Edpp_falla(i, k);
-                end
+                v = v + 9;
             end
         end
         
         Tn = ET_TPARK(d_falla(1:ng, k), ng);
-        An = inv(Tn)*inv(Mp)*Tn;
-%         Appn = inv(Tn)*inv(Mpp)*Tn;
+%         An = inv(Tn)*inv(Mp)*Tn;
+        Appn = inv(Tn)*inv(Mpp)*Tn;
 
 %         Ermn = inv(Tn)*Eqdpn;
-        Ermn = Tn\Eqd;
-        Vrmn = (YKrm_falla + An)\(An*Ermn);
+        Ermnp = Tn\Eqdppn;
+        Vrmn = (YKrm_falla + Appn)\(Appn*Ermnp);
         Irmn = YKrm_falla*Vrmn;
         
         Iqdn = Tn*Irmn;
@@ -409,15 +376,11 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             dv(i) = d_falla(i, k);
             Eqpv(i) = Eqp_falla(i, k);
             Edpv(i) = Edp_falla(i, k);
-            if(JAULA(i) == 1)
-                Eqppv(i) = Eqpp_falla(i, k);
-                Edppv(i) = Edpp_falla(i, k);
-            end
-            if(AGC(i) == 1)
-                Pmgapv(i) = Pmgap_falla(i, k);
-                Xvv(i) = Xv_falla(i, k);
-                Pcv(i) = Pc_falla(i, k);
-            end
+            Eqppv(i) = Eqpp_falla(i, k);
+            Edppv(i) = Edpp_falla(i, k);
+            Pmgapv(i) = Pmgap_falla(i, k);
+            Xvv(i) = Xv_falla(i, k);
+            Pcv(i) = Pc_falla(i, k);
 
             Pegapv(i) = Pegap_falla(i, k);
             Iqv(i) = Iq_falla(i, k);
@@ -440,18 +403,13 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 x0(v+1) = d_post(i, k - 1);
                 x0(v+2) = Eqp_post(i, k - 1);
                 x0(v+3) = Edp_post(i, k - 1);
-                v = v + 4;
-                if(JAULA(i) == 1)
-                    x0(v) = Eqpp_post(i, k - 1);
-                    x0(v+1) = Edpp_post(i, k - 1);
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    x0(v) = Pmgap_post(i, k - 1);
-                    x0(v+1) = Xv_post(i, k - 1);
-                    x0(v+2) = Pc_post(i, k - 1);
-                    v = v + 3;
-                end
+                x0(v+4) = Eqpp_post(i, k - 1);
+                x0(v+5) = Edpp_post(i, k - 1);
+                x0(v+6) = Pmgap_post(i, k - 1);
+                x0(v+7) = Xv_post(i, k - 1);
+                x0(v+8) = Pc_post(i, k - 1);
+                
+                v = v + 9;
             end
         else
             % Se va a realizar la primera integracion, por tanto los valores viejos seran los valores calculados como iniciales
@@ -461,35 +419,31 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 x0(v+1) = dv(i);                % d0
                 x0(v+2) = Eqpv(i);              % Eqp0
                 x0(v+3) = Edpv(i);              % Edp0
-                v = v + 4;
-                if(JAULA(i) == 1)
-                    x0(v) = Eqppv(i);             % Eqpp0
-                    x0(v+1) = Edppv(i);             % Edpp0
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    x0(v) = Pmgapv(i);            % Pmgap
-                    x0(v+1) = Xvv(i);               % Xv
-                    x0(v+2) = Pcv(i);               % Pc
-                    v = v + 3;
-                end
+                x0(v+4) = Eqppv(i);             % Eqpp0
+                x0(v+5) = Edppv(i);             % Edpp0
+                x0(v+6) = Pmgapv(i);            % Pmgap
+                x0(v+7) = Xvv(i);               % Xv
+                x0(v+8) = Pcv(i);               % Pc
+                
+                v = v + 9;
             end
         end
         
         exitflag = 0;
         iterations = 0;
         while(exitflag ~= 1)
-            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_post, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, JAULA, AGC, we, ng, dt), x0, options);
+            [x, ~, exitflag, ~] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_post, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
                 fprintf('FSOLVE no convergio en 100 iteraciones. Caso: post-falla\n');
-                pause;
+                break;
             end
         end
         
         %%  Se guardan los nuevos valores
         if(t == td)
+            v = 1;
             for i = 1:ng
                 % Se esta en t0+, por tanto los valores de las variables de estado deben permanecer igual a t0-
                 % Estos corresponden a los ultimos calculados en
@@ -498,17 +452,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 d_post(i, k) = d_falla(i, size_falla);
                 Eqp_post(i, k) = Eqp_falla(i, size_falla);
                 Edp_post(i, k) = Edp_falla(i, size_falla);
-                if(JAULA(i) == 1)
-                    Eqpp_post(i, k) = Eqpp_falla(i, size_falla);
-                    Edpp_post(i, k) = Edpp_falla(i, size_falla);
-                end
-                if(AGC(i) == 1)
-                    Pmgap_post(i, k) = Pmgap_falla(i, size_falla);
-                    Xv_post(i, k) = Xv_falla(i, size_falla);
-                    Pc_post(i, k) = Pc_falla(i, size_falla);
-                else
-                    Pmgap_post(i, k) = Pmgap0(i);
-                end
+                Eqpp_post(i, k) = Eqpp_falla(i, size_falla);
+                Edpp_post(i, k) = Edpp_falla(i, size_falla);
+                Pmgap_post(i, k) = Pmgap_falla(i, size_falla);
+                Xv_post(i, k) = Xv_falla(i, size_falla);
+                Pc_post(i, k) = Pc_falla(i, size_falla);
+                v = v + 9;
             end
         else
             %   Si ya se esta en t0+ +dt entonces si se guarda el valor
@@ -519,42 +468,28 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 d_post(i, k) = x(v+1);
                 Eqp_post(i, k) = x(v+2);
                 Edp_post(i, k) = x(v+3);
-                v = v + 4;
-                if(JAULA(i) == 1)
-                    Eqpp_post(i, k) = x(v);
-                    Edpp_post(i, k) = x(v+1);
-                    v = v + 2;
-                end
-                if(AGC(i) == 1)
-                    Pmgap_post(i, k) = x(v);
-                    Xv_post(i, k) = x(v+1);
-                    Pc_post(i, k) = x(v+2);
-                    v = v + 3;
-                else
-                    Pmgap_post(i, k) = Pmgap0(i);
-                end
+                Eqpp_post(i, k) = x(v+4);
+                Edpp_post(i, k) = x(v+5);
+                Pmgap_post(i, k) = x(v+6);
+                Xv_post(i, k) = x(v+7);
+                Pc_post(i, k) = x(v+8);
                 
                 Eqdpn(2*i-1, 1) = Eqp_post(i, k);
                 Eqdpn(2*i, 1) = Edp_post(i, k);
                 Eqdppn(2*i-1, 1) = Eqpp_post(i, k);
                 Eqdppn(2*i, 1) = Edpp_post(i, k);
                 
-                Eqd(2*i-1, 1) = Eqp_post(i, k);
-                Eqd(2*i, 1) = Edp_post(i, k);
-                if(JAULA(i) == 1)
-                    Eqd(2*i-1, 1) = Eqpp_post(i, k);
-                    Eqd(2*i, 1) = Edpp_post(i, k);
-                end
+                v = v + 9;
             end
         end
         
         Tn = ET_TPARK(d_post(1:ng, k), ng);
-        An = inv(Tn)*inv(Mp)*Tn;
-%         Appn = inv(Tn)*inv(Mpp)*Tn;
+%         An = inv(Tn)*inv(Mp)*Tn;
+        Appn = inv(Tn)*inv(Mpp)*Tn;
 
 %         Ermn = inv(Tn)*Eqdpn;
-        Ermn = Tn\Eqd;
-        Vrmn = (YKrm_post + An)\(An*Ermn);
+        Ermnp = Tn\Eqdppn;
+        Vrmn = (YKrm_post + Appn)\(Appn*Ermnp);
         Irmn = YKrm_post*Vrmn;
         
         Iqdn = Tn*Irmn;
@@ -585,15 +520,11 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
             dv(i) = d_post(i, k);
             Eqpv(i) = Eqp_post(i, k);
             Edpv(i) = Edp_post(i, k);
-            if(JAULA(i) == 1)
-                Eqppv(i) = Eqpp_post(i, k);
-                Edppv(i) = Edpp_post(i, k);
-            end
-            if(AGC(i) == 1)
-                Pmgapv(i) = Pmgap_post(i, k);
-                Xvv(i) = Xv_post(i, k);
-                Pcv(i) = Pc_post(i, k);
-            end
+            Eqppv(i) = Eqpp_post(i, k);
+            Edppv(i) = Edpp_post(i, k);
+            Pmgapv(i) = Pmgap_post(i, k);
+            Xvv(i) = Xv_post(i, k);
+            Pcv(i) = Pc_post(i, k);
             
             Pegapv(i) = Pegap_post(i, k);
             Iqv(i) = Iq_post(i, k);

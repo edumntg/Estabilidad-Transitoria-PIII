@@ -1,4 +1,4 @@
-function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, JAULA, AGC, we, ng, dt)
+function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Pegapv, Iqv, Idv, Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, Eexc, H, AGC, JAULA, we, ng, dt)
 
     % Tendremos 9 ecuaciones por generador, en total 4*n_gen ecuaciones
     % Tambien tendremos 9 variables, las cuales seran wn, dn, eqp, edp (n de nuevo)
@@ -44,60 +44,42 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     Xpn = zeros(ng, 1);
     dXvn = zeros(ng, 1);
     dPcn = zeros(ng, 1);
-    
-    vv = 4;
-    vv = vv + sum(JAULA.*2);
-    vv = vv + sum(AGC.*3);
-    
-    F = zeros(vv, 1);
+        
+    F = zeros(9*ng, 1);
         
     v = 1;
+    vv = 0;
     for i = 1:ng
         wn(i) = x(v);
         dn(i) = x(v+1);
         Eqpn(i) = x(v+2);
         Edpn(i) = x(v+3);
-        v = v + 4;
-        if(JAULA(i) == 1)
-            Eqppn(i) = x(v);
-            Edppn(i) = x(v+1);
-            v = v + 2;
-        end
-        if(AGC(i) == 1)
-            Pmgapn(i) = x(v);
-            Xvn(i) = x(v+1);
-            Pcn(i) = x(v+2);
-            v = v + 3;
-        else
-            Pmgapn(i) = Pmgapv(i);
-        end
+        vv = vv + 4;
+        if(
+        Eqppn(i) = x(v+4);
+        Edppn(i) = x(v+5);
+        Pmgapn(i) = x(v+6);
+        Xvn(i) = x(v+7);
+        Pcn(i) = x(v+8);
+        v = v + 9;
     end
 
     Tn = ET_TPARK(dn, ng);
-    An = inv(Tn)*inv(Mp)*Tn;
-%     Appn = Tn\(Mpp\Tn);
+%     An = inv(Tn)*inv(Mp)*Tn;
+    Appn = Tn\(Mpp\Tn);
     
     Eqdpn = zeros(2*ng, 1);
     Eqdppn = zeros(2*ng, 1);
-    Eqd = zeros(2*ng, 1);
     for i = 1:ng
         Eqdpn(2*i-1, 1) = Eqpn(i);
         Eqdpn(2*i, 1) = Edpn(i);
         Eqdppn(2*i-1, 1) = Eqppn(i);
         Eqdppn(2*i, 1) = Edppn(i);
-        
-        Eqd(2*i-1, 1) = Eqpn(i);
-        Eqd(2*i, 1) = Edpn(i);
-        if(JAULA(i) == 1)
-            Eqd(2*i-1, 1) = Eqppn(i);
-            Eqd(2*i, 1) = Edppn(i);
-        end
-        
     end
 
 %     Ermn = inv(Tn)*Eqdpn;
-    Ermn = Tn\Eqd;
-    Vrmn = (YKrm + An)\(An*Ermn);
+    Ermn = Tn\Eqdppn;
+    Vrmn = (YKrm + Appn)\(Appn*Ermn);
     Irmn = YKrm*Vrmn;
     
     Iqdn = Tn*Irmn;
@@ -144,22 +126,15 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
         dXvn(i) = (1/Tv(i))*(Kt(i)*(Pcn(i) + Xpn(i)) - Xvn(i));
         dPcn(i) = -Ki(i)*wn(i)/(2*pi);
         
-        
         F(v) = -wn(i) + wv(i) + (dt/2)*(dwn(i) + dwv(i));
         F(v+1) = -dn(i) + dv(i) + (dt/2)*(ddn(i) + ddv(i));
         F(v+2) = -Eqpn(i) + Eqpv(i) + (dt/2)*(dEqpn(i) + dEqpv(i));
         F(v+3) = -Edpn(i) + Edpv(i) + (dt/2)*(dEdpn(i) + dEdpv(i));
-        v = v + 4;
-        if(JAULA(i) == 1)
-            F(v) = -Eqppn(i) + Eqppv(i) + (dt/2)*(dEqppn(i) + dEqppv(i));
-            F(v+1) = -Edppn(i) + Edppv(i) + (dt/2)*(dEdppn(i) + dEdppv(i));
-            v = v + 2;
-        end
-        if(AGC(i) == 1)
-            F(v) = -Pmgapn(i) + Pmgapv(i) + (dt/2)*(dPmgapn(i) + dPmgapv(i));
-            F(v+1) = -Xvn(i) + Xvv(i) + (dt/2)*(dXvn(i) + dXvv(i));
-            F(v+2) = -Pcn(i) + Pcv(i) + (dt/2)*(dPcn(i) + dPcv(i));
-            v = v + 3;
-        end
+        F(v+4) = -Eqppn(i) + Eqppv(i) + (dt/2)*(dEqppn(i) + dEqppv(i));
+        F(v+5) = -Edppn(i) + Edppv(i) + (dt/2)*(dEdppn(i) + dEdppv(i));
+        F(v+6) = -Pmgapn(i) + Pmgapv(i) + (dt/2)*(dPmgapn(i) + dPmgapv(i));
+        F(v+7) = -Xvn(i) + Xvv(i) + (dt/2)*(dXvn(i) + dXvv(i));
+        F(v+8) = -Pcn(i) + Pcv(i) + (dt/2)*(dPcn(i) + dPcv(i));
+        v = v + 9;
     end
 end

@@ -9,7 +9,7 @@ clc, clear, close all;
     % Hoja 5: Generadores
 
 % DATAFILE = 'BUSDATA.xlsx';
-DATAFILE = 'Datos9barras.xlsx';
+% DATAFILE = 'Datos9barras.xlsx';
 % DATAFILE = 'BUSDATA_fallabarra.xlsx';
 % DATAFILE = 'BUSDATA_fallalong.xlsx';
 
@@ -19,8 +19,8 @@ Sb = 100;
 
 tic
 
-[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE);
-
+[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData_DAT();
+% [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE);
 %%  No tocar
 ti = 0;
 f = SIMULATIONDATA(1);
@@ -42,7 +42,7 @@ ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel
 
 %% Aqui se cargaran en vectores los parametros de las maquinas como lo son resistencias, reactancias, constantes de
 % tiempo y constantes de inercia
-for i = 1:ng
+for i = 1:ng 
     Ra(i, 1) = GENDATA(i, 2);
     Xd(i, 1) = GENDATA(i, 3);
     Xdp(i, 1) = GENDATA(i, 4);
@@ -68,23 +68,27 @@ for i = 1:ng
     end
     H(i, 1) = GENDATA(i, 13);
     
-    Kv(i) = GENDATA(i, 14);
-    Ki(i) = GENDATA(i, 15);
-    Kt(i) = GENDATA(i, 16);
+    JAULA(i, 1) = GENDATA(i, 14);
+    AGC(i, 1) = GENDATA(i, 15);
+    Kv(i) = GENDATA(i, 16);
+    Ki(i) = GENDATA(i, 17);
+    Kt(i) = GENDATA(i, 18);
       
-    R(i, 1) = GENDATA(i, 17);
+    R(i, 1) = GENDATA(i, 19);
     
-    Tv(i, 1) = GENDATA(i, 18);
+    Tv(i, 1) = GENDATA(i, 20);
     if(Tv(i, 1) >= 1e10)
         Tv(i, 1) = Inf;
     end
     
-    Tt(i, 1) = GENDATA(i, 19);
+    Tt(i, 1) = GENDATA(i, 21);
     if(Tt(i, 1) >= 1e10)
         Tt(i, 1) = Inf;
     end
 end
 
+
+% R = R.*f;
 %%  Formacion de la Ybus para el FDC
 [Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, [], [], []);
 
@@ -119,8 +123,8 @@ YKrm_post = ET_YRM(YKron_post);
 Pmgap0 = ET_PMEC(Vrm_pre, Irm_pre, Ra, ng);
 
 %%  Calculo de la matriz T de Park para calcular la Eexc en el momento pre falla
-Mp = ET_MATRIZM(Ra, Xqp, Xdp, ng);
-Mpp = ET_MATRIZM(Ra, Xqpp, Xdpp, ng);
+Mp = ET_MATRIZM(Ra, Xqp, Xdp, Xqpp, Xdpp, JAULA, ng);
+Mpp = ET_MATRIZM(Ra, Xqpp, Xdpp, Xqpp, Xdpp, JAULA, ng);
 T = ET_TPARK(d0_pre, ng);
 A = T\Mp\T;
 App = T\Mpp\T;
@@ -140,9 +144,37 @@ Pc0 = Pegap0;
 
 [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
  w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
- w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post, Pegappostest] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_pre, YKrm_falla, YKrm_post, Ybusc_pre, Ybusc_falla, Ybusc_post, Mp, Mpp, Eexc, we, H, ng, n, tvec);
+ w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_pre, YKrm_falla, YKrm_post, Ybusc_pre, Ybusc_falla, Ybusc_post, Mp, Mpp, Eexc, we, H, AGC, JAULA, ng, n, tvec);
 
 toc
+
+%% Calculo de velocidades y frecuencias en las barras
+vel_pre = diff(theta_pre')./dt;
+vel_falla = diff(theta_falla')./dt;
+vel_post = diff(theta_post')./dt;
+
+f_pre = (vel_pre./(2*pi))';
+f_falla = (vel_falla./(2*pi))';
+f_post = (vel_post./(2*pi))';
+
+df_pre = (f - f_pre);
+df_falla = (f - f_falla);
+df_post = (f - f_post);
+
+% %% ACE
+% 
+% Kace = ones(ng, 1);
+% 
+% Beta = 1./R;
+% 
+% df_pre(:, size(df_pre, 2)+1) = df_pre(:, size(df_pre, 2));
+% df_falla(:, size(df_falla, 2)+1) = df_falla(:, size(df_falla, 2));
+% df_post(:, size(df_post, 2)+1) = df_post(:, size(df_post, 2));
+% 
+% ACE_pre = Kace.*(Pegap0-Pegap_pre) - Beta.*df_pre(1:ng, :);
+% ACE_falla = Kace.*(Pegap0-Pegap_falla) - Beta.*df_falla(1:ng, :);
+% ACE_post = Kace.*(Pegap0-Pegap_post) - Beta.*df_post(1:ng, :);
+% 
 
 %% Plots
 ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Pmgap_pre, Xv_pre, Pc_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Pmgap_falla, Xv_falla, Pc_falla, w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Pmgap_post, Xv_post, Pc_post, ng, n, [ti tp td tf dt]);

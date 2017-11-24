@@ -2,7 +2,7 @@
 
 % Programa para realizar la reduccion de Kron
 
-function M = ET_MATRIZM(Ra, Xq, Xd, ng)
+function M = ET_MATRIZM(Ra, Xqp, Xdp, Xqpp, Xdpp, JAULA, ng)
     %% Debemos reducir el sistema para eliminar las barras PQ.
     
     M = zeros(2*ng, 2*ng);
@@ -13,6 +13,13 @@ function M = ET_MATRIZM(Ra, Xq, Xd, ng)
             if(i == j)
                 M(2*i-1, 2*i-1) = Ra(i);
                 M(2*i, 2*i) = Ra(i);
+                
+                Xd = Xdp;
+                Xq = Xqp;
+                if(JAULA(i) == 1)
+                    Xd = Xdpp;
+                    Xq = Xqpp;
+                end
                 
                 M(2*i-1, 2*i) = -Xd(i);
                 M(2*i, 2*i-1) = Xq(i);
