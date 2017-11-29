@@ -1,4 +1,4 @@
 % Declaracion de los datos de integracion
 
 %	f(Hz)	tp		td		tf		step
-	60		80		83		2000	0.5
+	60		30		33		2000		0.5

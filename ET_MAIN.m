@@ -85,10 +85,30 @@ for i = 1:ng
     if(Tt(i, 1) >= 1e10)
         Tt(i, 1) = Inf;
     end
+    
+    AVR(i, 1) = GENDATA(i, 22);
+    Kmed(i, 1) = GENDATA(i, 23);
+    Kexc(i, 1) = GENDATA(i, 24);
+    Ka(i, 1) = GENDATA(i, 25);
+    Tmed(i, 1) = GENDATA(i, 26);
+    if(Tmed(i, 1) >= 1e10)
+        Tmed(i, 1) = Inf;
+    end
+    Texc(i, 1) = GENDATA(i, 27);
+    if(Texc(i, 1) >= 1e10)
+        Texc(i, 1) = Inf;
+    end
+    Ta(i, 1) = GENDATA(i, 28);
+    if(Ta(i, 1) >= 1e10)
+        Ta(i, 1) = Inf;
+    end
+    Kd(i, 1) = GENDATA(i, 29);
+    Kp(i, 1) = GENDATA(i, 30);
+    Kvi(i, 1) = GENDATA(i, 31);
+    Vexcmin(i, 1) = GENDATA(i, 32);
+    Vexcmax(i, 1) = GENDATA(i, 33);  
 end
 
-
-% R = R.*f;
 %%  Formacion de la Ybus para el FDC
 [Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, [], [], []);
 
@@ -142,9 +162,23 @@ Pegap0 = Pmgap0;
 Xv0 = Pegap0;
 Pc0 = Pegap0;
 
-[w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
- w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
- w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, Tt, Kv, Tv, Kt, Ki, R, YKrm_pre, YKrm_falla, YKrm_post, Ybusc_pre, Ybusc_falla, Ybusc_post, Mp, Mpp, Eexc, we, H, AGC, JAULA, ng, n, tvec);
+Vmed0 = sqrt(Vqp.^2 + Vdp.^2);
+Vexc0 = Eexc;
+for i = 1:ng
+    Vvi0(i) = Eexc(i)/(Kexc(i)*Ka(i));
+    Va0(i) = Eexc(i)/Kexc(i);
+end
+Vt0 = V;
+
+Vref = V;
+[w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
+ w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
+ w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Vmed0, Vvi0, Va0, Vexc0, Vt0, Vref, ...
+                                                                                                                                                                                                      Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
+                                                                                                                                                                                                      Tt, Kv, Tv, Kt, Ki, R, ...
+                                                                                                                                                                                                      Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, Vexcmin, Vexcmax, ...
+                                                                                                                                                                                                      YKrm_pre, YKrm_falla, YKrm_post, Ybusc_pre, Ybusc_falla, Ybusc_post, Mp, Mpp, Eexc, we, H, ...
+                                                                                                                                                                                                      AGC, JAULA, AVR, ng, n, tvec);
 
 toc
 
@@ -177,4 +211,7 @@ df_post = (f - f_post);
 % 
 
 %% Plots
-ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Pmgap_pre, Xv_pre, Pc_pre, w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Pmgap_falla, Xv_falla, Pc_falla, w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Pmgap_post, Xv_post, Pc_post, ng, n, [ti tp td tf dt]);
+ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, ...
+        w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, ...
+        w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, ...
+        JAULA, AGC, ng, n, [ti tp td tf dt]);
