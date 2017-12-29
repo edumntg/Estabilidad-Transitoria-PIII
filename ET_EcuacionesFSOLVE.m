@@ -1,13 +1,13 @@
-function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
+function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vwv, Vpc1v, Vpc2v, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
                                 Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                 Tt, Kv, Tv, Kt, Ki, R, ...
                                 Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, ...
-                                Eexc, H, JAULA, AGC, AVR, we, ng, dt)
+                                Kest, Tw, T1, T2, T3, T4, ...
+                                Eexc, H, JAULA, AGC, AVR, PSS, we, ng, dt)
 
     % Tendremos 9 ecuaciones por generador, en total 4*n_gen ecuaciones
     % Tambien tendremos 9 variables, las cuales seran wn, dn, eqp, edp (n de nuevo)
     D = 0.0;
-    
     
     wn = zeros(ng, 1);
     dn = zeros(ng, 1);
@@ -22,6 +22,9 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     Vvin = zeros(ng, 1);
     Van = zeros(ng, 1);
     Vexcn = zeros(ng, 1);
+    Vwn = zeros(ng, 1);
+    Vpc1n = zeros(ng, 1);
+    Vpc2n = zeros(ng, 1);
     
     Iqn = zeros(ng, 1);
     Idn = zeros(ng, 1);
@@ -46,6 +49,9 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     dVviv = zeros(ng, 1);
     dVav = zeros(ng, 1);
     dVexcv = zeros(ng, 1);
+    dVwv = zeros(ng, 1);
+    dVpc1v = zeros(ng, 1);
+    dVpc2v = zeros(ng, 1);
     
     dwn = zeros(ng, 1);
     ddn = zeros(ng, 1);
@@ -61,11 +67,15 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
     dVvin = zeros(ng, 1);
     dVan = zeros(ng, 1);
     dVexcn = zeros(ng, 1);
+    dVwn = zeros(ng, 1);
+    dVpc1n = zeros(ng, 1);
+    dVpc2n = zeros(ng, 1);
     
     vv = 4;
     vv = vv + sum(JAULA.*2);
     vv = vv + sum(AGC.*3);
     vv = vv + sum(AVR.*4);
+    vv = vv + sum(PSS.*3);
     
     F = zeros(vv, 1);
         
@@ -97,6 +107,12 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
             v = v + 4;
         else
             Vexcn(i) = Eexc(i);
+        end
+        if(PSS(i) == 1);
+            Vwn(i) = x(v);
+            Vpc1n(i) = x(v+1);
+            Vpc2n(i) = x(v+2);
+            v = v + 3;
         end
     end
 
@@ -149,12 +165,25 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
         ddv(i) = wv(i)*we;
         
         dVmedv(i) = (1/Tmed(i))*(Kmed(i)*abs(Vtv(i)) - Vmedv(i));
-        
-        ev(i) = Vref(i) - Vmedv(i);
+        if(PSS(i) == 1)
+            ev(i) = Vref(i) - Vmedv(i) + Vpc2v(i);
+        else
+            ev(i) = Vref(i) - Vmedv(i);
+        end
         dVviv(i) = Kvi(i)*ev(i);
         
+        %% Ecuaciones del PSS
+        dVwv(i) = Kest(i)*dwv(i) - Vwv(i)/Tw(i);
+        dVpc1v(i) = (1/T2(i))*(Vwv(i) + T1(i)*dVwv(i) - Vpc1v(i));
+        dVpc2v(i) = (1/T4(i))*(Vpc1v(i) + T3(i)*dVpc1v(i) - Vpc2v(i));
+                
         Vvpv(i) = Kp(i)*ev(i);
-        Vvdv(i) = -Kd(i)*dVmedv(i);
+
+        if(PSS(i) == 1)
+            Vvdv(i) = Kd(i)*(-dVmedv(i) + dVpc2v(i));
+        else
+            Vvdv(i) = -Kd(i)*dVmedv(i);
+        end
         Vxv(i) = Vvpv(i) + Vvdv(i) + Vviv(i);
         dVav(i) = (1/Ta(i))*(Ka(i)*Vxv(i) - Vav(i));
         
@@ -175,12 +204,23 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
         ddn(i) = wn(i)*we;
         
         dVmedn(i) = (1/Tmed(i))*(Kmed(i)*abs(Vtn(i)) - Vmedn(i));
-        
-        en(i) = Vref(i) - Vmedn(i);
+        if(PSS(i) == 1)
+            en(i) = Vref(i) - Vmedn(i) + Vpc2n(i);
+        else
+            en(i) = Vref(i) - Vmedn(i);
+        end
         dVvin(i) = Kvi(i)*en(i);
+
+        dVwn(i) = Kest(i)*dwn(i) - Vwn(i)/Tw(i);
+        dVpc1n(i) = (1/T2(i))*(Vwn(i) + T1(i)*dVwn(i) - Vpc1n(i));
+        dVpc2n(i) = (1/T4(i))*(Vpc1n(i) + T3(i)*dVpc1n(i) - Vpc2n(i));
         
         Vvpn(i) = Kp(i)*en(i);
-        Vvdn(i) = -Kd(i)*dVmedn(i);
+        if(PSS(i) == 1)
+            Vvdn(i) = Kd(i)*(-dVmedn(i) + dVpc2n(i));
+        else
+            Vvdn(i) = -Kd(i)*dVmedn(i);
+        end
         Vxn(i) = Vvpn(i) + Vvdn(i) + Vvin(i);
         dVan(i) = (1/Ta(i))*(Ka(i)*Vxn(i) - Van(i));
         
@@ -196,7 +236,7 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
         
         dXvn(i) = (1/Tv(i))*(Kv(i)*(Pcn(i) + Xpn(i)) - Xvn(i));
         dPcn(i) = -Ki(i)*wn(i);
-        
+               
         F(v) = -wn(i) + wv(i) + (dt/2)*(dwn(i) + dwv(i));
         F(v+1) = -dn(i) + dv(i) + (dt/2)*(ddn(i) + ddv(i));
         F(v+2) = -Eqpn(i) + Eqpv(i) + (dt/2)*(dEqpn(i) + dEqpv(i));
@@ -219,6 +259,12 @@ function F = ET_EcuacionesFSOLVE(x, YKrm, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmga
             F(v+2) = -Van(i) + Vav(i) + (dt/2)*(dVan(i) + dVav(i));
             F(v+3) = -Vexcn(i) + Vexcv(i) + (dt/2)*(dVexcn(i) + dVexcv(i));
             v = v + 4;
+        end
+        if(PSS(i) == 1)
+            F(v) = -Vwn(i) + Vwv(i) + (dt/2)*(dVwn(i) + dVwv(i));
+            F(v+1) = -Vpc1n(i) + Vpc1v(i) + (dt/2)*(dVpc1n(i) + dVpc1v(i));
+            F(v+2) = -Vpc2n(i) + Vpc2v(i) + (dt/2)*(dVpc2n(i) + dVpc2v(i));
+            v = v + 3;
         end
     end
 end

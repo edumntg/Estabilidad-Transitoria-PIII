@@ -1,13 +1,14 @@
 %% Aqui se haran las iteraciones y se resolvera la ecuacion de oscilacion
 
-function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
-          w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
-          w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Vmed0, Vvi0, Va0, Vexc0, Vt0, Vref,...
+function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, Vw_pre, Vpc1_pre, Vpc2_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
+          w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, Vw_falla, Vpc1_falla, Vpc2_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
+          w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, Vw_post, Vpc1_post, Vpc2_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Vmed0, Vvi0, Va0, Vw0, Vpc10, Vpc20, Vexc0, Vt0, Vref,...
                                                                                                                                                                                                                Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                                                                                                                                                                                                Tt, Kv, Tv, Kt, Ki, R, ...
                                                                                                                                                                                                                Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, Vexcmin, Vexcmax, ...
+                                                                                                                                                                                                               Kest, Tw, T1, T2, T3, T4, Vpc2min, Vpc2max, ...
                                                                                                                                                                                                                YKrm_pre, YKrm_falla, YKrm_post, Ybus_pre, Ybus_falla, Ybus_post, Mp, Mpp, Eexc, we, H, ...
-                                                                                                                                                                                                               AGC, JAULA, AVR, ng, n, tvec)
+                                                                                                                                                                                                               AGC, JAULA, AVR, PSS, ng, n, n_post, tvec)
 
     ti = tvec(1);
     tp = tvec(2);
@@ -29,8 +30,8 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Edp_pre = zeros(ng, size_pre);
     Eqpp_pre = zeros(ng, size_pre);
     Edpp_pre = zeros(ng, size_pre);
-    Vt_pre = zeros(ng, size_pre);
-    theta_pre = zeros(ng, size_pre);
+    Vt_pre = zeros(n, size_pre);
+    theta_pre = zeros(n, size_pre);
     Iq_pre = zeros(ng, size_pre);
     Id_pre = zeros(ng, size_pre);
     Pmgap_pre = zeros(ng, size_pre);
@@ -40,7 +41,9 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Vvi_pre = zeros(ng, size_pre);
     Va_pre = zeros(ng, size_pre);
     Vexc_pre = zeros(ng, size_pre);
-    
+    Vw_pre = zeros(ng, size_pre);
+    Vpc1_pre = zeros(ng, size_pre);
+    Vpc2_pre = zeros(ng, size_pre);
     %% Se definen las matrices para la integracion falla
     d_falla = zeros(ng, size_falla);
     w_falla = zeros(ng, size_falla);
@@ -49,8 +52,8 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Edp_falla = zeros(ng, size_falla);
     Eqpp_falla = zeros(ng, size_falla);
     Edpp_falla = zeros(ng, size_falla);
-    Vt_falla = zeros(ng, size_falla);
-    theta_falla = zeros(ng, size_falla);
+    Vt_falla = zeros(n, size_falla);
+    theta_falla = zeros(n, size_falla);
     Iq_falla = zeros(ng, size_falla);
     Id_falla = zeros(ng, size_falla);
     Pmgap_falla = zeros(ng, size_falla);
@@ -60,7 +63,9 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Vvi_falla = zeros(ng, size_falla);
     Va_falla = zeros(ng, size_falla);
     Vexc_falla = zeros(ng, size_falla);
-    
+    Vw_falla = zeros(ng, size_falla);
+    Vpc1_falla = zeros(ng, size_falla);
+    Vpc2_falla = zeros(ng, size_falla);
     %%  Se definen las matrices para la integracion post-falla
     d_post = zeros(ng, size_post);
     w_post = zeros(ng, size_post);
@@ -69,8 +74,8 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Edp_post = zeros(ng, size_post);
     Eqpp_post = zeros(ng, size_post);
     Edpp_post = zeros(ng, size_post);
-    Vt_post = zeros(ng, size_post);
-    theta_post = zeros(ng, size_post);
+    Vt_post = zeros(n, size_post);
+    theta_post = zeros(n, size_post);
     Iq_post = zeros(ng, size_post);
     Id_post = zeros(ng, size_post);
     Pmgap_post = zeros(ng, size_post);
@@ -80,6 +85,9 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Vvi_post = zeros(ng, size_post);
     Va_post = zeros(ng, size_post);
     Vexc_post = zeros(ng, size_post);
+    Vw_post = zeros(ng, size_post);
+    Vpc1_post = zeros(ng, size_post);
+    Vpc2_post = zeros(ng, size_post);
     
     Eqdpn = zeros(2*ng, 1);
     Eqdppn = zeros(2*ng, 1);
@@ -92,7 +100,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     vv = vv + sum(JAULA.*2);    % 2 ecuaciones adicionales por cada maquina
     vv = vv + sum(AGC.*3);      % 3 ecuaciones adicionales por cada maquina
     vv = vv + sum(AVR.*4);      % 4 ecuaciones adicionales por cada maquina
-
+    vv = vv + sum(PSS.*3);      % 3 ecuaciones por gen
     x0 = zeros(1, vv);
     
     %%  Integracion pre-falla
@@ -111,7 +119,10 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
     Vav = Va0;
     Vexcv = Vexc0;
     Vtv = Vt0;
-
+    Vwv = Vw0;
+    Vpc1v = Vpc10;
+    Vpc2v = Vpc20;
+    
     Pegapv = Pegap0;
     Iqv = Iq0;
     Idv = Id0;
@@ -144,6 +155,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexc_pre(i, k - 1);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vw_pre(i, k - 1);
+                    x0(v+1) = Vpc1_pre(i, k - 1);
+                    x0(v+2) = Vpc2_pre(i, k - 1);
+                    v = v + 3;
+                end
             end
         else
             % Se va a realizar la primera integracion, por tanto los valores viejos seran los valores calculados como iniciales
@@ -173,16 +190,23 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexcv(i);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vwv(i);
+                    x0(v+1) = Vpc1v(i);
+                    x0(v+2) = Vpc2v(i);
+                    v = v + 3;
+                end
             end
         end
         exitflag = 0;
         iterations = 0;
         while(exitflag ~= 1)
-            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_pre, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
+            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_pre, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vwv, Vpc1v, Vpc2v, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
                                                                  Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                                                  Tt, Kv, Tv, Kt, Ki, R, ...
                                                                  Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, ...
-                                                                 Eexc, H, JAULA, AGC, AVR, we, ng, dt), x0, options);
+                                                                 Kest, Tw, T1, T2, T3, T4, ...
+                                                                 Eexc, H, JAULA, AGC, AVR, PSS, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
@@ -226,6 +250,18 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 v = v + 4;
             else
                 Vexc_pre(i, k) = Eexc(i);
+            end
+            if(PSS(i) == 1)
+                Vw_pre(i, k) = x(v);
+                Vpc1_pre(i, k) = x(v+1);
+                Vpc2_pre(i, k) = x(v+2);
+                if(Vpc2_pre(i, k) > Vpc2max(i))
+                   Vpc2_pre(i, k) = Vpc2max(i);
+                end
+                if(Vpc2_pre(i, k) < Vpc2min(i))
+                    Vpc2_pre(i, k) = Vpc2min(i);
+                end
+                v = v + 3;
             end
             
             Eqdpn(2*i-1, 1) = Eqp_pre(i, k);
@@ -291,7 +327,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 Vav(i) = Va_pre(i, k);
                 Vexcv(i) = Vexc_pre(i, k);
             end
-
+            if(PSS(i) == 1)
+                Vwv(i) = Vw_pre(i, k);
+                Vpc1v(i) = Vpc1_pre(i, k);
+                Vpc2v(i) = Vpc2_pre(i, k);
+            end
+            
             Pegapv(i) = Pegap_pre(i, k);
             Iqv(i) = Iq_pre(i, k);
             Idv(i) = Id_pre(i, k);
@@ -331,6 +372,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexc_falla(i, k - 1);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vw_falla(i, k - 1);
+                    x0(v+1) = Vpc1_falla(i, k - 1);
+                    x0(v+2) = Vpc2_falla(i, k - 1);
+                    v = v + 3;
+                end
             end
         else
             % Se va a realizar la primera integracion, por tanto los valores viejos seran los valores calculados como iniciales
@@ -359,17 +406,24 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexcv(i);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vwv(i);            
+                    x0(v+1) = Vpc1v(i);               
+                    x0(v+2) = Vpc2v(i);
+                    v = v + 3;
+                end
             end
         end
         
         exitflag = 0;
         iterations = 0;
         while(exitflag ~= 1)
-            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_falla, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
+            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_falla, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vwv, Vpc1v, Vpc2v,  Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
                                                                  Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                                                  Tt, Kv, Tv, Kt, Ki, R, ...
                                                                  Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, ...
-                                                                 Eexc, H, JAULA, AGC, AVR, we, ng, dt), x0, options);
+                                                                 Kest, Tw, T1, T2, T3, T4, ...
+                                                                 Eexc, H, JAULA, AGC, AVR, PSS, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
@@ -417,6 +471,18 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 else
                     Vexc_falla(i, k) = Eexc(i);
                 end
+                if(PSS(i) == 1)
+                    Vw_falla(i, k) = Vw_pre(i, size_pre);
+                    Vpc1_falla(i, k) = Vpc1_pre(i, size_pre);
+                    Vpc2_falla(i, k) = Vpc2_pre(i, size_pre);
+                    if(Vpc2_falla(i,k) > Vpc2max(i))
+                        Vpc2_falla(i,k) = Vpc2max(i);
+                    end
+                    if(Vpc2_falla(i,k) < Vpc2min(i))
+                        Vpc2_falla(i,k) = Vpc2min(i);
+                    end
+                    v = v + 3;
+                end
             end
         else
             %   Si ya se esta en t0+ +dt entonces si se guarda el valor
@@ -455,6 +521,18 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     v = v + 4;
                 else
                     Vexc_falla(i, k) = Eexc(i);
+                end
+                if(PSS(i) == 1)
+                    Vw_falla(i, k) = x(v);
+                    Vpc1_falla(i, k) = x(v+1);
+                    Vpc2_falla(i, k) = x(v+2);
+                    if(Vpc2_falla(i, k) > Vpc2max(i))
+                        Vpc2_falla(i, k) = Vpc2max(i);
+                    end
+                    if(Vpc2_falla(i, k) < Vpc2min(i))
+                        Vpc2_falla(i, k) = Vpc2min(i);
+                    end
+                    v = v + 3;
                 end
                 Eqdpn(2*i-1, 1) = Eqp_falla(i, k);
                 Eqdpn(2*i, 1) = Edp_falla(i, k);
@@ -522,6 +600,11 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 Vav(i) = Va_falla(i, k);
                 Vexcv(i) = Vexc_falla(i, k);
             end
+            if(PSS(i) == 1)
+                Vwv(i) = Vw_falla(i, k);
+                Vpc1v(i) = Vpc1_falla(i, k);
+                Vpc2v(i) = Vpc2_falla(i, k);
+            end
             Pegapv(i) = Pegap_falla(i, k);
             Iqv(i) = Iq_falla(i, k);
             Idv(i) = Id_falla(i, k);
@@ -563,6 +646,12 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexc_post(i, k - 1);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vw_post(i, k - 1);
+                    x0(v+1) = Vpc1_post(i, k - 1);
+                    x0(v+2) = Vpc2_post(i, k - 1);
+                    v = v + 3;
+                end
             end
         else
             % Se va a realizar la primera integracion, por tanto los valores viejos seran los valores calculados como iniciales
@@ -591,17 +680,24 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     x0(v+3) = Vexcv(i);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    x0(v) = Vwv(i);            
+                    x0(v+1) = Vpc1v(i);              
+                    x0(v+2) = Vpc2v(i);    
+                    v = v + 3;
+                end
             end
         end
         
         exitflag = 0;
         iterations = 0;
         while(exitflag ~= 1)
-            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_post, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
+            [x, ~, exitflag] = fsolve(@(x)ET_EcuacionesFSOLVE(x, YKrm_post, wv, dv, Eqpv, Eqppv, Edpv, Edppv, Pmgapv, Xvv, Pcv, Vmedv, Vviv, Vav, Vwv, Vpc1v, Vpc2v, Vexcv, Pegapv, Iqv, Idv, Vtv, Vref, ...
                                                                  Mp, Mpp, Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                                                  Tt, Kv, Tv, Kt, Ki, R, ...
                                                                  Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, ...
-                                                                 Eexc, H, JAULA, AGC, AVR, we, ng, dt), x0, options);
+                                                                 Kest, Tw, T1, T2, T3, T4, ...
+                                                                 Eexc, H, JAULA, AGC, AVR, PSS, we, ng, dt), x0, options);
 
             iterations = iterations + 1;
             if(iterations == 100)
@@ -647,6 +743,18 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                     Vexc_post(i, k) = Vexc_falla(i, size_falla);
                     v = v + 4;
                 end
+                if(PSS(i) == 1)
+                    Vw_post(i, k) = Vw_falla(i, size_falla);
+                    Vpc1_post(i, k) = Vpc1_falla(i, size_falla);
+                    Vpc2_post(i, k) = Vpc2_falla(i, size_falla);
+                    if(Vpc2_post(i,k) > Vpc2max(i))
+                        Vpc2_post(i,k) = Vpc2max(i);
+                    end
+                    if(Vpc2_post(i,k) < Vpc2min(i))
+                        Vpc2_post(i,k) = Vpc2min(i);
+                    end
+                    v = v + 3;
+                end
             end
         else
             %   Si ya se esta en t0+ +dt entonces si se guarda el valor
@@ -686,6 +794,18 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 else
                     Vexc_post(i, k) = Eexc(i);
                 end
+                if(PSS(i) == 1)
+                    Vw_post(i, k) = x(v);
+                    Vpc1_post(i, k) = x(v+1);
+                    Vpc2_post(i, k) = x(v+2);
+                    if(Vpc2_post(i, k) > Vpc2max(i))
+                        Vpc2_post(i, k) = Vpc2max(i);
+                    end
+                    if(Vpc2_post(i, k) < Vpc2min(i))
+                        Vpc2_post(i, k) = Vpc2min(i);
+                    end
+                    v = v + 3;
+                end
                 Eqdpn(2*i-1, 1) = Eqp_post(i, k);
                 Eqdpn(2*i, 1) = Edp_post(i, k);
                 Eqdppn(2*i-1, 1) = Eqpp_post(i, k);
@@ -711,7 +831,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
         
         Iqdn = Tn*Irmn;
         
-        Ign = zeros(n, 1);
+        Ign = zeros(n_post, 1);
         for i = 1:ng
             Iq_post(i, k) = Iqdn(2*i-1);
             Id_post(i, k) = Iqdn(2*i);
@@ -726,7 +846,7 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
         
         Vbn = Ybus_post\Ign;
         
-        for i = 1:n
+        for i = 1:n_post
             Vt_post(i, k) = abs(Vbn(i));
             theta_post(i, k) = angle(Vbn(i));
         end
@@ -751,6 +871,11 @@ function [w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre,
                 Vviv(i) = Vvi_post(i, k);
                 Vav(i) = Va_post(i, k);
                 Vexcv(i) = Vexc_post(i, k);
+            end
+            if(PSS(i) == 1)
+                Vwv(i) = Vw_post(i, k);
+                Vpc1v(i) = Vpc1_post(i, k);
+                Vpc2v(i) = Vpc2_post(i, k);
             end
             Pegapv(i) = Pegap_post(i, k);
             Iqv(i) = Iq_post(i, k);

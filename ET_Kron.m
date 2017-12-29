@@ -2,10 +2,8 @@
 
 % Programa para realizar la reduccion de Kron
 
-function [Ykron, Ya, Yb, Yc, Yd] = ET_Kron(Ybus, ng)
+function [Ykron, Ya, Yb, Yc, Yd] = ET_Kron(Ybus, n, ng)
     %% Debemos reducir el sistema para eliminar las barras PQ.
-    
-    n = size(Ybus, 1);
     
     % La matriz Ya sera una matriz de tamaño = ng (tamaño igual al num de maquinas)
     Ya = Ybus(1:ng, 1:ng);

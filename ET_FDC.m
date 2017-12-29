@@ -1,7 +1,7 @@
 %% Eduardo Montilva 12-10089
 % Script para la solucion del flujo de carga, mediante fsolve
 
-function [V, th, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, Qflow, Qflow_bus, Ploss, Qloss, Ploada, Qloada] = ET_FDC(BUSDATA, LINEDATA, G, B, g, b)
+function [V, th, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, Qflow, Qflow_bus, Ploss, Qloss, Ploada, Qloada] = ET_FDC(BUSDATA, GENDATA, LINEDATA, G, B, g, b)
 
     PQ = 0;
     SLACK = 1;

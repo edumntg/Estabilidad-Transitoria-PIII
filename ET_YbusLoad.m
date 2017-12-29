@@ -4,7 +4,7 @@
 
 % global n nl ns Ybus
 
-function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, nl)
+function [Ybus, G, B, g, b] = ET_YbusLoad(BUSDATA, LINEDATA, FALLADATA, n, nl, V, event)
 
     
     Ybus = zeros(n,n);          % Se inicializa como una m
@@ -12,8 +12,6 @@ function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, nl)
 
     g = zeros(n, n);
     b = zeros(n, n);
-    
-    nl = size(LINEDATA, 1);
 
     % Se agregan las impedancias de las lineas
     for i = 1:nl 
@@ -42,7 +40,40 @@ function [Ybus, G, B, g, b] = ET_Ybus(BUSDATA, LINEDATA, n, nl)
             b(to, from) = imag(Bl/2);
         end
     end
+    
+    %% Se agrega la impedancia de carga
+    for i = 1:n
+        bus = BUSDATA(i, 1);
+        Sload = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+        if(abs(Sload) ~= 0)
+            Zload = V(i)^2/conj(Sload);
+            Ybus(bus, bus) = Ybus(bus, bus) + 1/Zload;
+        end
+    end
  
+    if(event == 1) % se esta en condicion falla
+        Zf = 1e-10 + 1i*1e-10;
+        for i = 1:n
+            if(FALLADATA(2) == i)
+                Ybus(i, i) = Ybus(i, i ) + 1/Zf;
+                
+                % Si hay carga acoplada a esa barra, se elimina
+                Sload = BUSDATA(i, 5) + 1i*BUSDATA(i, 6);
+                if(abs(Sload) ~= 0)
+                    Zload = V(i)^2/conj(Sload);
+                    Ybus(i, i) = Ybus(i, i) - 1/Zload;
+                end
+                
+                for j = 1:nl
+                    if(LINEDATA(j, 1) == LINEDATA(j, 2) && LINEDATA(j, 1) == i) %shunt
+                        Zshunt = 1i*LINEDATA(j, 4);
+                        Ybus(i, i) = Ybus(i, i) - 1/Zshunt;
+                    end
+                end
+            end
+        end
+    end
+    
     G = real(Ybus);
     B = imag(Ybus);
 end

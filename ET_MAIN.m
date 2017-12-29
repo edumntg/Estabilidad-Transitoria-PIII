@@ -19,8 +19,22 @@ Sb = 100;
 
 tic
 
-[BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData_DAT();
+[BUSDATA, BUSDATA_LONG, BUSDATA_POST, LINEDATA, LINEDATA_LONG, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData_DAT();
 % [BUSDATA, LINEDATA_PRE, LINEDATA_FALLA, LINEDATA_POST, GENDATA, SIMULATIONDATA, FALLADATA] = ET_LoadData(DATAFILE);
+% Si la falla es longitudinal, usamos como nodos principal el archivo
+% BUSDATA_LONG
+
+% En un sistema, la topologia pre y falla sera igual (tanto para falla en
+% barra como longitudinal)
+
+if(FALLADATA(1) == 1)   % La falla es longitudinal
+    BUSDATA = BUSDATA_LONG;
+    LINEDATA = LINEDATA_LONG;
+else                    % Si la falla es en barra, la topologia postfalla sera igual a la falla
+    LINEDATA_POST = LINEDATA;
+end
+
+
 %%  No tocar
 ti = 0;
 f = SIMULATIONDATA(1);
@@ -35,13 +49,47 @@ we = 2*pi*f;
 %%
 
 n = size(BUSDATA, 1);                   % el numero de filas en el archivo excel es igual al numero de barras
-nl_pre = size(LINEDATA_PRE, 1);         % el numero de filas en el archivo excel es igual al numero de ramas
-nl_falla = size(LINEDATA_FALLA, 1);     % el numero de filas en el archivo excel es igual al numero de ramas
+n_post = size(BUSDATA_POST, 1);
+nl = size(LINEDATA, 1);         % el numero de filas en el archivo excel es igual al numero de ramas
 nl_post = size(LINEDATA_POST, 1);       % el numero de filas en el archivo excel es igual al numero de ramas
 ng = size(GENDATA, 1);                  % el numero de filas en el archivo excel es igual al numero de generadores
 
 %% Aqui se cargaran en vectores los parametros de las maquinas como lo son resistencias, reactancias, constantes de
 % tiempo y constantes de inercia
+
+Ra = zeros(ng, 1);
+Xd = zeros(ng, 1);
+Xq = zeros(ng, 1);
+Xdp = zeros(ng, 1);
+Xqp = zeros(ng, 1);
+Xdpp = zeros(ng, 1);
+Xqpp = zeros(ng, 1);
+Td0p = zeros(ng, 1);
+Tq0p = zeros(ng, 1);
+Td0pp = zeros(ng, 1);
+Tq0pp = zeros(ng, 1);
+H = zeros(ng, 1);
+JAULA = zeros(ng, 1);
+AGC = zeros(ng, 1);
+Kv = zeros(ng, 1);
+Ki = zeros(ng, 1);
+Kt = zeros(ng, 1);
+R = zeros(ng, 1);
+Tv = zeros(ng, 1);
+Tt = zeros(ng, 1);
+AVR = zeros(ng, 1);
+Kmed = zeros(ng, 1);
+Kexc = zeros(ng, 1);
+Ka = zeros(ng, 1);
+Tmed = zeros(ng, 1);
+Texc = zeros(ng, 1);
+Ta = zeros(ng, 1);
+Kd = zeros(ng, 1);
+Kp = zeros(ng, 1);
+Kvi = zeros(ng, 1);
+Vexcmin = zeros(ng, 1);
+Vexcmax = zeros(ng, 1);
+
 for i = 1:ng 
     Ra(i, 1) = GENDATA(i, 2);
     Xd(i, 1) = GENDATA(i, 3);
@@ -106,27 +154,38 @@ for i = 1:ng
     Kp(i, 1) = GENDATA(i, 30);
     Kvi(i, 1) = GENDATA(i, 31);
     Vexcmin(i, 1) = GENDATA(i, 32);
-    Vexcmax(i, 1) = GENDATA(i, 33);  
+    Vexcmax(i, 1) = GENDATA(i, 33); 
+    
+    PSS(i, 1) = GENDATA(i, 34);
+    Kest(i, 1) = GENDATA(i, 35);
+    Tw(i, 1) = GENDATA(i, 36);
+    T1(i, 1) = GENDATA(i, 37);
+    T2(i, 1) = GENDATA(i, 38);
+    T3(i, 1) = GENDATA(i, 39);
+    T4(i, 1) = GENDATA(i, 40);
+    Vpc2min(i, 1) = GENDATA(i, 41);
+    Vpc2max(i, 1) = GENDATA(i, 42);
 end
 
 %%  Formacion de la Ybus para el FDC
-[Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA_PRE, n, [], [], []);
+[Ybus_pre, G_pre, B_pre, g_pre, b_pre] = ET_Ybus(BUSDATA, LINEDATA, n, nl);
+[Ybus_post, G_post, B_post, g_post, b_post] = ET_Ybus(BUSDATA_POST, LINEDATA_POST, n_post, nl_post);
 
 %%  Ejecucion del FDC
 [V, theta, Pgen, Qgen, Pneta, Qneta, Sshunt, Pflow, Pflow_bus, ...
-Qflow, Qflow_bus, Ploss, Qloss, Pload, Qload] = ET_FDC(BUSDATA, LINEDATA_PRE, G_pre, B_pre, g_pre, b_pre);
+Qflow, Qflow_bus, Ploss, Qloss, Pload, Qload] = ET_FDC(BUSDATA, GENDATA, LINEDATA, G_pre, B_pre, g_pre, b_pre);
 
 ET_PrintFDC;
-
+pause;
 %%  Una vez que se realizo el FDC, se pueden modelar las cargas como impedancia y se agregan a la Ybus
-Ybusc_pre = ET_Ybus(BUSDATA, LINEDATA_PRE, n, V, theta, []);
-Ybusc_falla = ET_Ybus(BUSDATA, LINEDATA_FALLA, n, V, theta, FALLADATA);
-Ybusc_post = ET_Ybus(BUSDATA, LINEDATA_POST, n, V, theta, []);
+Ybusc_pre = ET_YbusLoad(BUSDATA, LINEDATA, FALLADATA, n, nl, V, 0);
+Ybusc_falla = ET_YbusLoad(BUSDATA, LINEDATA, FALLADATA, n, nl, V, 1);
+Ybusc_post = ET_YbusLoad(BUSDATA_POST, LINEDATA_POST, FALLADATA, n_post, nl_post, V, 0);
 
 %%  Estos son los equivalentes de Kron sin impedancias de generadores. En este equivalente se eliminan barras PQ
-YKron_pre = ET_Kron(Ybusc_pre, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-YKron_falla = ET_Kron(Ybusc_falla, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
-YKron_post = ET_Kron(Ybusc_post, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+YKron_pre = ET_Kron(Ybusc_pre, n, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+YKron_falla = ET_Kron(Ybusc_falla, n, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
+YKron_post = ET_Kron(Ybusc_post, n_post, ng);                                % Se obtiene la matriz equivalente de Kron para el sistema pre-falla
 
 %%  Matrices RM
 YKrm_pre = ET_YRM(YKron_pre);
@@ -170,15 +229,21 @@ for i = 1:ng
 end
 Vt0 = V;
 
+Vw0 = zeros(ng, 1);
+Vpc10 = zeros(ng, 1);
+Vpc20 = zeros(ng, 1);
+
 Vref = V;
-[w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
- w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
- w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Vmed0, Vvi0, Va0, Vexc0, Vt0, Vref, ...
+
+[w_pre, d_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, Vw_pre, Vpc1_pre, Vpc2_pre, Pegap_pre, Vt_pre, theta_pre, Iq_pre, Id_pre, ...
+ w_falla, d_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, Vw_falla, Vpc1_falla, Vpc2_falla, Pegap_falla, Vt_falla, theta_falla, Iq_falla, Id_falla, ...
+ w_post, d_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, Vw_post, Vpc1_post, Vpc2_post, Pegap_post, Vt_post, theta_post, Iq_post, Id_post] = ET_Integracion(w0, d0, Pegap0, Iq0, Id0, Eqp0, Eqpp0, Edp0, Edpp0, Pmgap0, Xv0, Pc0, Vmed0, Vvi0, Va0, Vw0, Vpc10, Vpc20, Vexc0, Vt0, Vref, ...
                                                                                                                                                                                                       Ra, Xq, Xqp, Xqpp, Xd, Xdp, Xdpp, Tq0p, Tq0pp, Td0p, Td0pp, ...
                                                                                                                                                                                                       Tt, Kv, Tv, Kt, Ki, R, ...
                                                                                                                                                                                                       Kmed, Kexc, Ka, Tmed, Texc, Ta, Kd, Kp, Kvi, Vexcmin, Vexcmax, ...
+                                                                                                                                                                                                      Kest, Tw, T1, T2, T3, T4, Vpc2min, Vpc2max, ...
                                                                                                                                                                                                       YKrm_pre, YKrm_falla, YKrm_post, Ybusc_pre, Ybusc_falla, Ybusc_post, Mp, Mpp, Eexc, we, H, ...
-                                                                                                                                                                                                      AGC, JAULA, AVR, ng, n, tvec);
+                                                                                                                                                                                                      AGC, JAULA, AVR, PSS, ng, n, n_post, tvec);
 
 toc
 
@@ -214,4 +279,4 @@ df_post = (f - f_post);
 ET_Plot(w_pre, d_pre, Pegap_pre, Eqp_pre, Eqpp_pre, Edp_pre, Edpp_pre, Vt_pre, theta_pre, Pmgap_pre, Xv_pre, Pc_pre, Vmed_pre, Vvi_pre, Va_pre, Vexc_pre, ...
         w_falla, d_falla, Pegap_falla, Eqp_falla, Eqpp_falla, Edp_falla, Edpp_falla, Vt_falla, theta_falla, Pmgap_falla, Xv_falla, Pc_falla, Vmed_falla, Vvi_falla, Va_falla, Vexc_falla, ...
         w_post, d_post, Pegap_post, Eqp_post, Eqpp_post, Edp_post, Edpp_post, Vt_post, theta_post, Pmgap_post, Xv_post, Pc_post, Vmed_post, Vvi_post, Va_post, Vexc_post, ...
-        JAULA, AGC, ng, n, [ti tp td tf dt]);
+        JAULA, AGC, PSS, ng, n, n_post, [ti tp td tf dt]);
