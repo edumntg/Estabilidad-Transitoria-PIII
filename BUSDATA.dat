@@ -1,4 +1,5 @@
 % Declaracion de datos de barras
+% Sistema Anderson de 9 barras
 
 % 	id		tipo			V		theta		Pd		Qd		Pg		Qg		FactorParticipacion		droop	Pmax	
 

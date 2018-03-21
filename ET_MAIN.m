@@ -176,7 +176,7 @@ end
 Qflow, Qflow_bus, Ploss, Qloss, Pload, Qload] = ET_FDC(BUSDATA, GENDATA, LINEDATA, G_pre, B_pre, g_pre, b_pre);
 
 ET_PrintFDC;
-pause;
+
 %%  Una vez que se realizo el FDC, se pueden modelar las cargas como impedancia y se agregan a la Ybus
 Ybusc_pre = ET_YbusLoad(BUSDATA, LINEDATA, FALLADATA, n, nl, V, 0);
 Ybusc_falla = ET_YbusLoad(BUSDATA, LINEDATA, FALLADATA, n, nl, V, 1);
